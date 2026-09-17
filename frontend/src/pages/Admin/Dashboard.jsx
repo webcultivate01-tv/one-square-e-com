@@ -13,7 +13,8 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { BsBoxSeam } from "react-icons/bs";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import { can } from "../../redux/userSlice.js";
 import {
   Avatar,
@@ -134,12 +135,15 @@ const Dashboard = () => {
     async (isBackground = false) => {
       if (!isBackground) setLoading(true);
       try {
-        const { data: stats } = await api.get("/admin/dashboard/stats", { params: { range } });
+        const { data: stats } = await axios.get(serverUrl + "/api/admin/dashboard/stats", {
+          params: { range },
+          withCredentials: true,
+        });
         setData(stats);
         setError("");
       } catch (err) {
         // Keep the last good state on a background refresh — no error flash.
-        if (!isBackground) setError(errMsg(err, "Could not load the dashboard."));
+        if (!isBackground) setError(err.response?.data?.message || "Could not load the dashboard.");
       } finally {
         if (!isBackground) setLoading(false);
       }
@@ -150,7 +154,10 @@ const Dashboard = () => {
   const loadOrders = useCallback(async () => {
     if (!canSeeOrders) return;
     try {
-      const { data: res } = await api.get("/admin/getallorders", { params: { page: 1, limit: 5 } });
+      const { data: res } = await axios.get(serverUrl + "/api/admin/getallorders", {
+        params: { page: 1, limit: 5 },
+        withCredentials: true,
+      });
       setOrders(res.orders || []);
     } catch {
       /* the dashboard still renders without this strip */

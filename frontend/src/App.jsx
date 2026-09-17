@@ -13,6 +13,9 @@ import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import ChangePassword from "./pages/ChangePassword.jsx";
 
+/** The deployed backend URL — imported wherever an API call is made. */
+export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+
 /** Placeholder for modules not built yet — keeps the sidebar/router honest about what's live. */
 const ComingSoon = ({ title }) => (
   <div className="flex flex-col items-center justify-center text-center py-24">

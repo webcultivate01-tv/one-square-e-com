@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import api, { UNAUTHORIZED_EVENT } from "../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../App.jsx";
+import { UNAUTHORIZED_EVENT } from "../utils/session.js";
 import { clearUser, setAuthChecked, setUserData } from "../redux/userSlice.js";
 
 /**
@@ -15,7 +17,9 @@ const useGetCurrentUser = () => {
 
     const probe = async () => {
       try {
-        const { data } = await api.get("/user/getprofile");
+        const { data } = await axios.get(serverUrl + "/api/user/getprofile", {
+          withCredentials: true,
+        });
         if (!cancelled) dispatch(setUserData(data.user));
       } catch {
         if (!cancelled) dispatch(clearUser());

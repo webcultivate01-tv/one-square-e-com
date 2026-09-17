@@ -4,7 +4,8 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiAlertCircle, FiArrowRight, FiLock, FiMail } from "react-icons/fi";
 import { MdLocalShipping } from "react-icons/md";
-import api, { errMsg } from "../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../App.jsx";
 import { isStaffRole, setUserData } from "../redux/userSlice.js";
 import PasswordField from "../components/PasswordField.jsx";
 import { FullPageLoader, Spinner } from "../components/ui.jsx";
@@ -45,12 +46,16 @@ const AdminLogin = () => {
 
     setBusy(true);
     try {
-      const { data } = await api.post("/auth/login", { email: email.trim(), password });
+      const { data } = await axios.post(
+        serverUrl + "/api/auth/login",
+        { email: email.trim(), password },
+        { withCredentials: true }
+      );
       const user = data.user;
 
       // Role check BEFORE navigating.
       if (!isStaffRole(user?.role)) {
-        await api.post("/auth/logout").catch(() => {});
+        await axios.post(serverUrl + "/api/auth/logout", {}, { withCredentials: true }).catch(() => {});
         setError("This account does not have admin access.");
         setBusy(false);
         return;
@@ -65,7 +70,7 @@ const AdminLogin = () => {
       }
       navigate(location.state?.from || "/admin", { replace: true });
     } catch (err) {
-      setError(errMsg(err, "Sign-in failed."));
+      setError(err.response?.data?.message || "Sign-in failed.");
       setBusy(false);
     }
   };

@@ -10,7 +10,8 @@ import {
   FiTrash2,
   FiUser,
 } from "react-icons/fi";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import { setUserData } from "../../redux/userSlice.js";
 import { Avatar, RoleBadge, SectionLoader, Spinner, formatDate } from "../../components/ui.jsx";
 import PasswordField, { RulesChecklist, isStrongPassword } from "../../components/PasswordField.jsx";
@@ -90,11 +91,11 @@ const Profile = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/me");
+      const { data } = await axios.get(serverUrl + "/api/admin/me", { withCredentials: true });
       applyAdmin(data.admin);
       setError("");
     } catch (err) {
-      setError(errMsg(err, "Could not load your profile."));
+      setError(err.response?.data?.message || "Could not load your profile.");
     } finally {
       setLoading(false);
     }
@@ -129,11 +130,13 @@ const Profile = () => {
     const fd = new FormData();
     fd.append("avatar", file);
     try {
-      const { data } = await api.put("/admin/me/avatar", fd);
+      const { data } = await axios.put(serverUrl + "/api/admin/me/avatar", fd, {
+        withCredentials: true,
+      });
       applyAdmin(data.admin);
       toast.success(data.message || "Profile photo updated.");
     } catch (err) {
-      toast.error(errMsg(err, "Could not update your profile photo."));
+      toast.error(err.response?.data?.message || "Could not update your profile photo.");
     } finally {
       setAvatarBusy(false);
     }
@@ -142,11 +145,13 @@ const Profile = () => {
   const removePhoto = async () => {
     setAvatarBusy(true);
     try {
-      const { data } = await api.delete("/admin/me/avatar");
+      const { data } = await axios.delete(serverUrl + "/api/admin/me/avatar", {
+        withCredentials: true,
+      });
       applyAdmin(data.admin);
       toast.success(data.message || "Profile photo removed.");
     } catch (err) {
-      toast.error(errMsg(err, "Could not remove your profile photo."));
+      toast.error(err.response?.data?.message || "Could not remove your profile photo.");
     } finally {
       setAvatarBusy(false);
     }
@@ -167,24 +172,28 @@ const Profile = () => {
 
     setSavingProfile(true);
     try {
-      const { data } = await api.put("/admin/me", {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        gender: form.gender,
-        dateOfBirth: form.dateOfBirth || null,
-        address: {
-          street: form.street.trim(),
-          city: form.city.trim(),
-          state: form.state.trim(),
-          zip: form.zip.trim(),
-          country: form.country.trim(),
+      const { data } = await axios.put(
+        serverUrl + "/api/admin/me",
+        {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          gender: form.gender,
+          dateOfBirth: form.dateOfBirth || null,
+          address: {
+            street: form.street.trim(),
+            city: form.city.trim(),
+            state: form.state.trim(),
+            zip: form.zip.trim(),
+            country: form.country.trim(),
+          },
         },
-      });
+        { withCredentials: true }
+      );
       applyAdmin(data.admin);
       toast.success(data.message || "Profile updated.");
     } catch (err) {
-      toast.error(errMsg(err, "Could not update your profile."));
+      toast.error(err.response?.data?.message || "Could not update your profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -213,14 +222,15 @@ const Profile = () => {
 
     setSavingPassword(true);
     try {
-      const { data } = await api.post("/admin/me/change-password", {
-        currentPassword: pwd.current,
-        newPassword: pwd.next,
-      });
+      const { data } = await axios.post(
+        serverUrl + "/api/admin/me/change-password",
+        { currentPassword: pwd.current, newPassword: pwd.next },
+        { withCredentials: true }
+      );
       toast.success(data.message || "Password updated.");
       setPwd({ current: "", next: "", confirm: "" });
     } catch (err) {
-      toast.error(errMsg(err, "Could not update your password."));
+      toast.error(err.response?.data?.message || "Could not update your password.");
     } finally {
       setSavingPassword(false);
     }

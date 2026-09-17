@@ -27,7 +27,9 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log(`[db] connected → mysql://${process.env.DB_HOST || "127.0.0.1"}/${process.env.DB_NAME || "ecom"}`);
-    await sequelize.sync({ alter: true });
+    // alter:true on every boot piles up a new duplicate unique index per restart (MySQL caps
+    // a table at 64 keys) — only alter when explicitly asked to reconcile a model change.
+    await sequelize.sync({ alter: process.env.DB_SYNC_ALTER === "true" });
     console.log("[db] schema synced");
   } catch (error) {
     console.error("[db] connection failed:", error.message);

@@ -13,7 +13,8 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import useDebounced from "../../hooks/useDebounced.js";
 import {
   ConfirmModal,
@@ -57,11 +58,13 @@ const Categories = () => {
   const loadCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/category/getall");
+      const { data } = await axios.get(serverUrl + "/api/category/getall", {
+        withCredentials: true,
+      });
       setCategories(data.categories || []);
       setError("");
     } catch (err) {
-      setError(errMsg(err, "Could not load categories."));
+      setError(err.response?.data?.message || "Could not load categories.");
     } finally {
       setLoading(false);
     }
@@ -179,16 +182,20 @@ const Categories = () => {
 
     try {
       if (editing) {
-        const { data } = await api.put(`/category/update/${editing._id}`, fd);
+        const { data } = await axios.put(serverUrl + `/api/category/update/${editing._id}`, fd, {
+          withCredentials: true,
+        });
         toast.success(data.message || "Category updated.");
       } else {
-        const { data } = await api.post("/category/create", fd);
+        const { data } = await axios.post(serverUrl + "/api/category/create", fd, {
+          withCredentials: true,
+        });
         toast.success(data.message || "Category created.");
       }
       setModalOpen(false);
       loadCategories();
     } catch (err) {
-      toast.error(errMsg(err, "Could not save the category."));
+      toast.error(err.response?.data?.message || "Could not save the category.");
     } finally {
       setSaving(false);
     }
@@ -198,11 +205,13 @@ const Categories = () => {
     try {
       const fd = new FormData();
       fd.append("isActive", String(!category.isActive));
-      const { data } = await api.put(`/category/update/${category._id}`, fd);
+      const { data } = await axios.put(serverUrl + `/api/category/update/${category._id}`, fd, {
+        withCredentials: true,
+      });
       toast.success(data.message || "Category updated.");
       loadCategories();
     } catch (err) {
-      toast.error(errMsg(err, "Could not update the category."));
+      toast.error(err.response?.data?.message || "Could not update the category.");
     }
   };
 
@@ -211,8 +220,9 @@ const Categories = () => {
   const runDelete = async (target, { force = false } = {}) => {
     setDeleteBusy(true);
     try {
-      const { data } = await api.delete(`/category/delete/${target._id}`, {
+      const { data } = await axios.delete(serverUrl + `/api/category/delete/${target._id}`, {
         params: force ? { force: true } : undefined,
+        withCredentials: true,
       });
       toast.success(data.message || "Category deleted.");
       setDeleteTarget(null);
@@ -221,9 +231,9 @@ const Categories = () => {
     } catch (err) {
       if (err?.response?.status === 409) {
         setDeleteTarget(null);
-        setForceDelete({ target, message: errMsg(err) });
+        setForceDelete({ target, message: err.response?.data?.message || "Something went wrong." });
       } else {
-        toast.error(errMsg(err, "Could not delete the category."));
+        toast.error(err.response?.data?.message || "Could not delete the category.");
       }
     } finally {
       setDeleteBusy(false);

@@ -168,6 +168,15 @@ const validateProduct = (data, { isCreate }) => {
 
 const lowStockClause = () => where(col("stock"), Op.lte, col("lowStockThreshold"));
 
+/** A single-variant product with no stock left can't stay "active". */
+const applyStockStatus = (data) => {
+  const hasVariants = Array.isArray(data.variants) && data.variants.length > 0;
+  const stock = data.stock ?? 0;
+  if (!hasVariants && stock <= 0 && data.status === "active") {
+    data.status = "out_of_stock";
+  }
+};
+
 // GET /api/product/getpublished   (public)
 export const getPublishedProducts = async (req, res) => {
   try {
@@ -381,7 +390,7 @@ export const createProduct = async (req, res) => {
     const uploaded = commitProductImages(req.files || [], categorySlug, productId);
     const pastedUrls = toStringArray(safeJson(req.body.imageUrls, []));
 
-    const product = await Product.create({
+    const payload = {
       id: productId,
       ...data,
       variants,
@@ -389,7 +398,10 @@ export const createProduct = async (req, res) => {
       slug: await buildUniqueSlug(Product, data.name),
       createdBy: req.adminUser?.id || null,
       updatedBy: req.adminUser?.id || null,
-    });
+    };
+    applyStockStatus(payload);
+
+    const product = await Product.create(payload);
 
     const full = await Product.findByPk(product.id, { include: [CATEGORY_INCLUDE] });
 
@@ -475,6 +487,7 @@ export const updateProduct = async (req, res) => {
     }
 
     product.updatedBy = req.adminUser?.id || null;
+    applyStockStatus(product);
     await product.save();
 
     const full = await Product.findByPk(id, { include: [CATEGORY_INCLUDE] });
@@ -509,6 +522,7 @@ export const deleteProduct = async (req, res) => {
     product.deletedAt = new Date();
     product.deletedBy = req.adminUser?.id || null;
     product.isPublished = false;
+    applyStockStatus(product);
     await product.save();
 
     return res.status(200).json({ message: "Product moved to trash." });
@@ -529,6 +543,7 @@ export const restoreProduct = async (req, res) => {
     product.isDeleted = false;
     product.deletedAt = null;
     product.deletedBy = null;
+    applyStockStatus(product);
     await product.save();
 
     return res.status(200).json({ message: "Product restored." });

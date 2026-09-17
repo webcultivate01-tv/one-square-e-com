@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiAlertCircle, FiShield } from "react-icons/fi";
-import api, { errMsg } from "../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../App.jsx";
 import { clearUser, setUserData } from "../redux/userSlice.js";
 import PasswordField, { RulesChecklist, StrengthMeter, isStrongPassword } from "../components/PasswordField.jsx";
 import { Spinner } from "../components/ui.jsx";
@@ -47,19 +48,23 @@ const ChangePassword = () => {
 
     setBusy(true);
     try {
-      await api.post("/admin/me/change-password", { currentPassword, newPassword });
+      await axios.post(
+        serverUrl + "/api/admin/me/change-password",
+        { currentPassword, newPassword },
+        { withCredentials: true }
+      );
       dispatch(setUserData({ ...userData, mustChangePassword: false }));
       toast.success("Password updated.");
       navigate("/admin", { replace: true });
     } catch (err) {
-      setError(errMsg(err, "Could not update the password."));
+      setError(err.response?.data?.message || "Could not update the password.");
     } finally {
       setBusy(false);
     }
   };
 
   const signOut = async () => {
-    await api.post("/auth/logout").catch(() => {});
+    await axios.post(serverUrl + "/api/auth/logout", {}, { withCredentials: true }).catch(() => {});
     dispatch(clearUser());
     navigate("/admin/login", { replace: true });
   };

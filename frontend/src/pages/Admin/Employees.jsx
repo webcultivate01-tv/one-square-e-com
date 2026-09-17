@@ -12,7 +12,8 @@ import {
   FiX,
   FiZap,
 } from "react-icons/fi";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import useDebounced from "../../hooks/useDebounced.js";
 import {
   Avatar,
@@ -119,12 +120,15 @@ const Employees = () => {
       if (filters.role !== "all") params.role = filters.role;
       if (filters.status !== "all") params.status = filters.status;
 
-      const { data } = await api.get("/admin/employees", { params });
+      const { data } = await axios.get(serverUrl + "/api/admin/employees", {
+        params,
+        withCredentials: true,
+      });
       setRows(data.employees || []);
       setPermissionKeys(data.permissionKeys || []);
       setError("");
     } catch (err) {
-      setError(errMsg(err, "Could not load employees."));
+      setError(err.response?.data?.message || "Could not load employees.");
     } finally {
       setLoading(false);
     }
@@ -233,33 +237,41 @@ const Employees = () => {
     setSaving(true);
     try {
       if (editing) {
-        const { data } = await api.put(`/admin/employees/${editing._id}`, {
-          name: form.name.trim(),
-          phone: form.phone.trim(),
-          role: form.role,
-          gender: form.gender,
-          address: form.address,
-          permissions: form.permissions,
-        });
+        const { data } = await axios.put(
+          serverUrl + `/api/admin/employees/${editing._id}`,
+          {
+            name: form.name.trim(),
+            phone: form.phone.trim(),
+            role: form.role,
+            gender: form.gender,
+            address: form.address,
+            permissions: form.permissions,
+          },
+          { withCredentials: true }
+        );
         toast.success(data.message || "Employee updated.");
       } else {
-        const { data } = await api.post("/admin/employees", {
-          name: form.name.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          password: form.password,
-          role: form.role,
-          gender: form.gender,
-          address: form.address,
-          permissions: form.permissions,
-          mustChangePassword: form.mustChangePassword,
-        });
+        const { data } = await axios.post(
+          serverUrl + "/api/admin/employees",
+          {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim(),
+            password: form.password,
+            role: form.role,
+            gender: form.gender,
+            address: form.address,
+            permissions: form.permissions,
+            mustChangePassword: form.mustChangePassword,
+          },
+          { withCredentials: true }
+        );
         toast.success(data.message || "Employee created.");
       }
       setModalOpen(false);
       loadEmployees();
     } catch (err) {
-      toast.error(errMsg(err, "Could not save this employee."));
+      toast.error(err.response?.data?.message || "Could not save this employee.");
     } finally {
       setSaving(false);
     }
@@ -272,14 +284,16 @@ const Employees = () => {
     setStatusBusy(true);
     try {
       const nextActive = !statusTarget.isActive;
-      const { data } = await api.patch(`/admin/employees/${statusTarget._id}/status`, {
-        isActive: nextActive,
-      });
+      const { data } = await axios.patch(
+        serverUrl + `/api/admin/employees/${statusTarget._id}/status`,
+        { isActive: nextActive },
+        { withCredentials: true }
+      );
       toast.success(data.message);
       setStatusTarget(null);
       loadEmployees();
     } catch (err) {
-      toast.error(errMsg(err, "Could not change this employee's status."));
+      toast.error(err.response?.data?.message || "Could not change this employee's status.");
     } finally {
       setStatusBusy(false);
     }
@@ -289,12 +303,14 @@ const Employees = () => {
     if (!deleteTarget) return;
     setDeleteBusy(true);
     try {
-      const { data } = await api.delete(`/admin/employees/${deleteTarget._id}`);
+      const { data } = await axios.delete(serverUrl + `/api/admin/employees/${deleteTarget._id}`, {
+        withCredentials: true,
+      });
       toast.success(data.message);
       setDeleteTarget(null);
       loadEmployees();
     } catch (err) {
-      toast.error(errMsg(err, "Could not delete this employee."));
+      toast.error(err.response?.data?.message || "Could not delete this employee.");
     } finally {
       setDeleteBusy(false);
     }
@@ -313,15 +329,16 @@ const Employees = () => {
     }
     setResetBusy(true);
     try {
-      const { data } = await api.post(`/admin/employees/${resetTarget._id}/reset-password`, {
-        password: resetPassword,
-        mustChangePassword: true,
-      });
+      const { data } = await axios.post(
+        serverUrl + `/api/admin/employees/${resetTarget._id}/reset-password`,
+        { password: resetPassword, mustChangePassword: true },
+        { withCredentials: true }
+      );
       toast.success(data.message);
       setResetTarget(null);
       setResetPassword("");
     } catch (err) {
-      toast.error(errMsg(err, "Could not reset this password."));
+      toast.error(err.response?.data?.message || "Could not reset this password.");
     } finally {
       setResetBusy(false);
     }

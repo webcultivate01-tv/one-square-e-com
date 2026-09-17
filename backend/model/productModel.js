@@ -81,14 +81,6 @@ Product.init(
     tableName: "products",
     timestamps: true,
     indexes: [{ fields: ["category", "status", "isDeleted"] }],
-    hooks: {
-      beforeSave: (product) => {
-        const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
-        if (!hasVariants && product.stock <= 0 && product.status === "active") {
-          product.status = "out_of_stock";
-        }
-      },
-    },
   }
 );
 

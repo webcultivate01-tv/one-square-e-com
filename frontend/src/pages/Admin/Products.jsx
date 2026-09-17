@@ -13,7 +13,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import { BsBoxSeam } from "react-icons/bs";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import useDebounced from "../../hooks/useDebounced.js";
 import {
   ConfirmModal,
@@ -179,16 +180,20 @@ const Products = () => {
 
   const loadCategories = useCallback(async () => {
     try {
-      const { data } = await api.get("/category/getall");
+      const { data } = await axios.get(serverUrl + "/api/category/getall", {
+        withCredentials: true,
+      });
       setCategories(data.categories || []);
     } catch (err) {
-      toast.error(errMsg(err, "Could not load categories."));
+      toast.error(err.response?.data?.message || "Could not load categories.");
     }
   }, []);
 
   const loadStats = useCallback(async () => {
     try {
-      const { data } = await api.get("/product/stats");
+      const { data } = await axios.get(serverUrl + "/api/product/stats", {
+        withCredentials: true,
+      });
       setStats(data.stats);
     } catch {
       /* the stat strip is optional */
@@ -204,12 +209,15 @@ const Products = () => {
         if (value === "all" || value === false || value === "") continue;
         params[key] = value;
       }
-      const { data } = await api.get("/product/getall", { params });
+      const { data } = await axios.get(serverUrl + "/api/product/getall", {
+        params,
+        withCredentials: true,
+      });
       setRows(data.products || []);
       setPagination(data.pagination || { page: 1, limit: 20, total: 0, pages: 1 });
       setError("");
     } catch (err) {
-      setError(errMsg(err, "Could not load products."));
+      setError(err.response?.data?.message || "Could not load products.");
     } finally {
       setLoading(false);
     }
@@ -264,11 +272,11 @@ const Products = () => {
   const runBulk = async () => {
     setBulkBusy(true);
     try {
-      const { data } = await api.post("/product/bulk", {
-        ids: [...selected],
-        action: bulkAction,
-        value: bulkValue,
-      });
+      const { data } = await axios.post(
+        serverUrl + "/api/product/bulk",
+        { ids: [...selected], action: bulkAction, value: bulkValue },
+        { withCredentials: true }
+      );
       toast.success(data.message);
       setSelected(new Set());
       setBulkAction("");
@@ -277,7 +285,7 @@ const Products = () => {
       loadProducts();
       loadStats();
     } catch (err) {
-      toast.error(errMsg(err, "The bulk action failed."));
+      toast.error(err.response?.data?.message || "The bulk action failed.");
     } finally {
       setBulkBusy(false);
     }
@@ -456,17 +464,21 @@ const Products = () => {
 
     try {
       if (editing) {
-        const { data } = await api.put(`/product/update/${editing._id}`, fd);
+        const { data } = await axios.put(serverUrl + `/api/product/update/${editing._id}`, fd, {
+          withCredentials: true,
+        });
         toast.success(data.message || "Product updated.");
       } else {
-        const { data } = await api.post("/product/create", fd);
+        const { data } = await axios.post(serverUrl + "/api/product/create", fd, {
+          withCredentials: true,
+        });
         toast.success(data.message || "Product created.");
       }
       setModalOpen(false);
       loadProducts();
       loadStats();
     } catch (err) {
-      toast.error(errMsg(err, "Could not save the product."));
+      toast.error(err.response?.data?.message || "Could not save the product.");
     } finally {
       setSaving(false);
     }
@@ -476,13 +488,15 @@ const Products = () => {
     if (!deleteTarget) return;
     setDeleteBusy(true);
     try {
-      const { data } = await api.delete(`/product/delete/${deleteTarget._id}`);
+      const { data } = await axios.delete(serverUrl + `/api/product/delete/${deleteTarget._id}`, {
+        withCredentials: true,
+      });
       toast.success(data.message);
       setDeleteTarget(null);
       loadProducts();
       loadStats();
     } catch (err) {
-      toast.error(errMsg(err, "Could not delete the product."));
+      toast.error(err.response?.data?.message || "Could not delete the product.");
     } finally {
       setDeleteBusy(false);
     }
@@ -490,12 +504,16 @@ const Products = () => {
 
   const restore = async (product) => {
     try {
-      const { data } = await api.post(`/product/restore/${product._id}`);
+      const { data } = await axios.post(
+        serverUrl + `/api/product/restore/${product._id}`,
+        {},
+        { withCredentials: true }
+      );
       toast.success(data.message);
       loadProducts();
       loadStats();
     } catch (err) {
-      toast.error(errMsg(err, "Could not restore the product."));
+      toast.error(err.response?.data?.message || "Could not restore the product.");
     }
   };
 

@@ -18,7 +18,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import { BsBoxSeam } from "react-icons/bs";
-import api, { errMsg } from "../../api/client.js";
+import axios from "axios";
+import { serverUrl } from "../../App.jsx";
 import { can, clearUser } from "../../redux/userSlice.js";
 import { Avatar } from "../../components/ui.jsx";
 import CommandPalette from "../../components/CommandPalette.jsx";
@@ -126,11 +127,16 @@ const AdminShell = () => {
     try {
       const [products, orders] = await Promise.all([
         can(userData, "products")
-          ? api.get("/product/stats").then((r) => r.data.stats?.lowStock || 0)
+          ? axios
+              .get(serverUrl + "/api/product/stats", { withCredentials: true })
+              .then((r) => r.data.stats?.lowStock || 0)
           : Promise.resolve(0),
         can(userData, "orders")
-          ? api
-              .get("/admin/getallorders", { params: { status: "confirmed", limit: 1 } })
+          ? axios
+              .get(serverUrl + "/api/admin/getallorders", {
+                params: { status: "confirmed", limit: 1 },
+                withCredentials: true,
+              })
               .then((r) => r.data.total || 0)
           : Promise.resolve(0),
       ]);
@@ -148,10 +154,10 @@ const AdminShell = () => {
 
   const logout = async () => {
     try {
-      await api.post("/auth/logout");
+      await axios.post(serverUrl + "/api/auth/logout", {}, { withCredentials: true });
     } catch (error) {
       // The local session is cleared regardless.
-      console.warn(errMsg(error));
+      console.warn(error.response?.data?.message || error.message);
     }
     dispatch(clearUser());
     toast.success("Signed out.");

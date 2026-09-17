@@ -4,13 +4,13 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import categoryRoutes from "./routes/categoryRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
-import employeeRoutes from "./routes/employeeRoutes.js";
-import customerRoutes from "./routes/customerRoutes.js";
+import authRoutes from "./routes/authRoute.js";
+import userRoutes from "./routes/userRoute.js";
+import productRoutes from "./routes/productRoute.js";
+import categoryRoutes from "./routes/categoryRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
+import employeeRoutes from "./routes/employeeRoute.js";
+import customerRoutes from "./routes/customerRoute.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
