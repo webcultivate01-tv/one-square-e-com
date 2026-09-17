@@ -1,0 +1,6 @@
+products/*
+tmp/*
+admin/*
+!products/.gitkeep
+!tmp/.gitkeep
+!admin/.gitkeep

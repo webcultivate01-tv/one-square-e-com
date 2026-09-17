@@ -1,0 +1,38 @@
+{
+  "name": "goboxly-admin-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GOBOXLY admin panel — API server",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "seed:admin": "node scripts/createAdmin.js",
+    "seed:demo": "node scripts/seedDemo.js",
+    "seed:employees": "node scripts/seedEmployees.js",
+    "smoke": "node scripts/smokeTest.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.5.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.24.4",
+    "nodemailer": "^6.9.16",
+    "pdfkit": "^0.15.0",
+    "sequelize": "^6.37.8",
+    "stripe": "^17.3.1",
+    "uuid": "^14.0.2",
+    "validator": "^13.12.0"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^13.0.3",
+    "nodemon": "^3.1.7"
+  }
+}
