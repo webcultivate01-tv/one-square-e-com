@@ -4,14 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Storefront identity — warm retail orange.
+        // Storefront identity — One Square Associates blue (#264796).
         brand: {
-          50: "#fff7ed",
-          100: "#ffedd5",
-          400: "#fb923c",
-          500: "#f97316",
-          600: "#ea580c",
-          700: "#c2410c",
+          50: "#eef2fb",
+          100: "#dbe4f6",
+          200: "#b0c1e8",
+          300: "#849ed9",
+          400: "#4d70bf",
+          500: "#264796",
+          600: "#1f3b7d",
+          700: "#182f64",
+          800: "#13254f",
+          900: "#0e1c3d",
         },
         // Admin console ground.
         console: {

@@ -3,6 +3,8 @@ import { FiAlertOctagon, FiTool } from "react-icons/fi";
 import useGetCurrentUser from "./hooks/useGetCurrentUser.js";
 import AdminRoute from "./components/AdminRoute.jsx";
 import PermissionRoute from "./components/PermissionRoute.jsx";
+import RoleRoute from "./components/RoleRoute.jsx";
+import PublicLayout from "./components/PublicLayout.jsx";
 import AdminShell from "./pages/Admin/AdminShell.jsx";
 import Dashboard from "./pages/Admin/Dashboard.jsx";
 import Products from "./pages/Admin/Products.jsx";
@@ -12,6 +14,15 @@ import Profile from "./pages/Admin/Profile.jsx";
 import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import ChangePassword from "./pages/ChangePassword.jsx";
+import Home from "./pages/Home.jsx";
+import Shop from "./pages/Shop.jsx";
+import ProductDetail from "./pages/ProductDetail.jsx";
+import About from "./pages/About.jsx";
+import Contact from "./pages/Contact.jsx";
+import TelecallerLogin from "./pages/TelecallerLogin.jsx";
+import SalesLogin from "./pages/SalesLogin.jsx";
+import TelecallerDashboard from "./pages/Telecaller/Dashboard.jsx";
+import SalesDashboard from "./pages/Sales/Dashboard.jsx";
 
 /** The deployed backend URL — imported wherever an API call is made. */
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
@@ -44,7 +55,16 @@ const App = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/admin" replace />} />
+      {/* ---------------------------------------------------------- storefront */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+      </Route>
+
+      {/* --------------------------------------------------------------- admin */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/no-access" element={<NoAccess />} />
 
@@ -90,7 +110,41 @@ const App = () => {
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/admin" replace />} />
+      {/* ---------------------------------------------------------- telecaller */}
+      <Route path="/talecaller/login" element={<TelecallerLogin />} />
+      <Route
+        path="/talecaller/change-password"
+        element={<ChangePassword homePath="/talecaller" loginPath="/talecaller/login" />}
+      />
+      <Route
+        path="/talecaller"
+        element={
+          <RoleRoute
+            role="telecaller"
+            loginPath="/talecaller/login"
+            changePasswordPath="/talecaller/change-password"
+          >
+            <TelecallerDashboard />
+          </RoleRoute>
+        }
+      />
+
+      {/* --------------------------------------------------------------- sales */}
+      <Route path="/sales/login" element={<SalesLogin />} />
+      <Route
+        path="/sales/change-password"
+        element={<ChangePassword homePath="/sales" loginPath="/sales/login" />}
+      />
+      <Route
+        path="/sales"
+        element={
+          <RoleRoute role="sales" loginPath="/sales/login" changePasswordPath="/sales/change-password">
+            <SalesDashboard />
+          </RoleRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

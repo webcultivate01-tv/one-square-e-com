@@ -13,7 +13,7 @@ import { Spinner } from "../components/ui.jsx";
  * Forced change-password screen. AdminRoute redirects here whenever
  * `mustChangePassword` is set, so no other console route can render first.
  */
-const ChangePassword = () => {
+const ChangePassword = ({ homePath = "/admin", loginPath = "/admin/login" }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
@@ -55,7 +55,7 @@ const ChangePassword = () => {
       );
       dispatch(setUserData({ ...userData, mustChangePassword: false }));
       toast.success("Password updated.");
-      navigate("/admin", { replace: true });
+      navigate(homePath, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Could not update the password.");
     } finally {
@@ -66,7 +66,7 @@ const ChangePassword = () => {
   const signOut = async () => {
     await axios.post(serverUrl + "/api/auth/logout", {}, { withCredentials: true }).catch(() => {});
     dispatch(clearUser());
-    navigate("/admin/login", { replace: true });
+    navigate(loginPath, { replace: true });
   };
 
   return (
