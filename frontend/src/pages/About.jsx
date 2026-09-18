@@ -65,7 +65,7 @@ const About = () => (
       <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Ready to furnish your space?</h2>
       <p className="text-[14px] text-slate-500 mt-2">Browse the collection or talk to our team about a custom piece.</p>
       <div className="flex items-center justify-center gap-3 mt-6">
-        <Link to="/shop" className="btn-brand">
+        <Link to="/products" className="btn-brand">
           Shop Now <FiArrowRight size={14} />
         </Link>
         <Link to="/contact" className="btn-brand-outline">

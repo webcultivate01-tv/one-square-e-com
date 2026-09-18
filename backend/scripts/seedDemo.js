@@ -5,76 +5,71 @@ import Product from "../model/productModel.js";
 import { toSlug } from "../utils/helpers.js";
 
 /**
- * Seeds the storefront catalog (furniture categories + products) so /shop
- * and the homepage have real data to render. Idempotent: matches on slug and
- * upserts, never duplicates. Product photos are Lorem Picsum placeholders —
- * swap them for real photos from Admin → Products once available.
+ * Seeds the storefront catalog with the same décor categories/products the
+ * homepage currently renders from hardcoded data (frontend/src/utils/site.js
+ * DECOR_CATEGORIES + FEATURED_PRODUCTS), so /products, /product/:id and the
+ * admin Categories/Products screens show real, matching data.
+ *
+ * Idempotent: matches on slug and upserts, never duplicates. Any category or
+ * product left over from an older, unrelated seed run (mismatched furniture
+ * placeholder data) is removed first so the catalog reflects only what's
+ * actually on the storefront.
  *
  *   npm run seed:demo
  */
 
-const placeholderImage = (seed) => `https://picsum.photos/seed/${seed}/900/700`;
+const unsplash = (id, w = 900) => `https://images.unsplash.com/${id}?w=${w}&q=80&auto=format&fit=crop`;
 
 const CATEGORIES = [
-  { name: "Sofas", description: "3-seater, L-shape and Chesterfield sofas for every living room." },
-  { name: "Recliners", description: "Manual and motorised recliners in leatherette and fabric." },
-  { name: "Chairs", description: "Wing chairs, lounge chairs and accent seating." },
-  { name: "Living Room", description: "Coffee tables, TV units and living room furniture." },
-  { name: "Bedroom", description: "Beds, benches and bedroom storage furniture." },
-  { name: "Kids Furniture", description: "Playful, safe furniture sized for children." },
+  { name: "Wall Décor", image: unsplash("photo-1534349762230-e0cadf78f5da", 400), description: "Statement wall art, prints and décor panels." },
+  { name: "Clocks", image: unsplash("photo-1590587754330-6fc06e3a9bb7", 400), description: "Wall and table clocks in modern and classic styles." },
+  { name: "Sculptures", image: unsplash("photo-1617596223856-a17ba0eac50b", 400), description: "Sculptural showpieces for shelves and console tables." },
+  { name: "Showpieces", image: unsplash("photo-1701594446784-c73dc5e89050", 400), description: "Curated showpieces and decorative accents." },
+  { name: "Table Décor", image: unsplash("photo-1559373098-518914f1c315", 400), description: "Side tables and tabletop décor pieces." },
+  { name: "Decorative Accessories", image: unsplash("photo-1572048572872-2394404cf1f3", 400), description: "Planters, trays and other decorative accessories." },
+  { name: "Home Décor", image: unsplash("photo-1554995207-c18c203602cb", 400), description: "Statement furniture and home décor pieces." },
+  { name: "New Arrivals", image: unsplash("photo-1640246944367-89e6a3eeab74", 400), description: "The latest pieces added to the collection." },
+  { name: "Table Lamps & Lighting", image: unsplash("photo-1580130281320-0ef0754f2bf7", 400), description: "Floor and table lamps to light up any room." },
+  { name: "Decorative Mirrors", image: unsplash("photo-1612392549429-a874f09c65f1", 400), description: "Wall mirrors in a range of shapes and finishes." },
 ];
 
 const PRODUCT_SEED = [
-  // [name, category, price, discountPrice, stock, sku, tags, isFeatured, isBestseller, isNewArrival]
-  ["Chesterfield 3-Seater Sofa", "Sofas", 68500, 58200, 12, "SF-CHS-3S", ["chesterfield", "velvet"], true, true, false],
-  ["L-Shape Sectional Sofa — Charcoal", "Sofas", 82100, 71400, 8, "SF-LSH-CH", ["l-shape", "sectional"], true, true, false],
-  ["Button-Tufted Signature Sofa", "Sofas", 54200, 45200, 15, "SF-SIG-004", ["signature", "tufted"], false, true, false],
-  ["Compact 2-Seater Loveseat", "Sofas", 32900, 27900, 20, "SF-LOV-2S", ["compact", "loveseat"], false, false, true],
-  ["Sofa-cum-Bed — Grey Weave", "Sofas", 41500, 35900, 10, "SF-BED-GY", ["sofa-bed", "space-saving"], false, false, true],
-
-  ["Single Motorised Recliner", "Recliners", 63700, 54900, 14, "RC-MOT-1S", ["motorised", "leatherette"], true, true, false],
-  ["Manual 2-Seater Recliner Sofa", "Recliners", 48900, 41200, 9, "RC-MAN-2S", ["manual", "fabric"], false, true, false],
-  ["3-Seater Rocker Recliner", "Recliners", 58400, 49900, 6, "RC-ROC-3S", ["rocker", "family"], false, false, false],
-  ["Glider Recliner — Tan Leatherette", "Recliners", 22499, 18999, 25, "RC-GLD-TN", ["glider", "compact"], false, false, true],
-
-  ["Wing Back Accent Chair", "Chairs", 18400, 15900, 18, "CH-WNG-01", ["wingback", "accent"], false, true, false],
-  ["King Chair — Solid Wood", "Chairs", 28400, 24500, 7, "CH-KNG-WD", ["king-chair", "statement"], true, false, false],
-  ["Lounge Chair with Ottoman", "Chairs", 24900, 21200, 11, "CH-LNG-OT", ["lounge", "ottoman"], false, false, true],
-  ["Rattan Accent Chair", "Chairs", 12900, 10999, 22, "CH-RTN-01", ["rattan", "outdoor"], false, false, false],
-
-  ["Solid Wood Coffee Table", "Living Room", 15600, 13400, 16, "LR-CFT-SW", ["coffee-table", "wood"], false, false, false],
-  ["TV Console Unit — Walnut", "Living Room", 21400, 18200, 10, "LR-TVU-WN", ["tv-unit", "storage"], true, false, false],
-  ["Nesting Side Table Set (2pc)", "Living Room", 8900, 7499, 30, "LR-NST-2P", ["side-table", "set"], false, false, true],
-
-  ["Upholstered Bed Frame — King", "Bedroom", 45200, 38900, 8, "BR-BED-KG", ["upholstered", "king"], true, true, false],
-  ["Bedroom Storage Bench", "Bedroom", 11400, 9799, 20, "BR-BNC-01", ["bench", "storage"], false, false, false],
-  ["Bedside Table — Set of 2", "Bedroom", 9600, 8299, 24, "BR-BST-2P", ["bedside", "set"], false, false, false],
-
-  ["Unicorn Kids Armchair", "Kids Furniture", 9499, 7999, 19, "KD-UNI-AC", ["kids", "unicorn"], true, false, true],
-  ["Kids Study Table & Chair Set", "Kids Furniture", 13200, 11400, 14, "KD-STD-01", ["kids", "study"], false, false, true],
+  // [name, category, price, discountPrice, stock, sku, tags, image, isFeatured, isBestseller, isNewArrival]
+  ["Velvet Tufted Accent Chair", "Home Décor", 18999, 14999, 14, "HD-VTA-001", ["accent-chair", "velvet"], "photo-1567538096630-e0c55bd6374c", true, true, false],
+  ["Marigold Lounge Chair", "Home Décor", 21499, 0, 9, "HD-MLC-002", ["lounge-chair"], "photo-1586023492125-27b2c045efd7", true, false, true],
+  ["Boucle Two-Seater Sofa", "Home Décor", 42999, 36999, 6, "HD-BTS-003", ["sofa", "boucle"], "photo-1493663284031-b7e3aefcae8e", true, true, false],
+  ["Reclaimed Wood Side Table", "Table Décor", 8499, 0, 20, "TD-RWS-004", ["side-table", "wood"], "photo-1519710164239-da123dc03ef4", true, false, false],
+  ["Round Rattan Wall Mirror Duo", "Decorative Mirrors", 6999, 5499, 16, "DM-RRM-005", ["mirror", "rattan"], "photo-1631679706909-1844bbd07221", true, false, true],
+  ["Wooden Wall Clock", "Clocks", 3499, 0, 25, "CL-WWC-006", ["clock", "wood"], "photo-1533090161767-e6ffed986c88", true, false, false],
+  ["Line-Art Print Set of 2", "Wall Décor", 2999, 2299, 30, "WD-LAP-007", ["wall-art", "print"], "photo-1586105251261-72a756497a11", true, false, false],
+  ["Matte Arc Floor Lamp", "Table Lamps & Lighting", 11999, 0, 11, "TL-MAF-008", ["floor-lamp"], "photo-1507473885765-e6ed057f782c", true, true, false],
+  ["Ceramic Planter Pot", "Decorative Accessories", 1499, 1199, 40, "DA-CPP-009", ["planter", "ceramic"], "photo-1485955900006-10f4d324d411", true, false, false],
+  ["Scented Glass Jar Candle", "Showpieces", 1299, 0, 35, "SP-SGJ-010", ["candle"], "photo-1602874801007-bd458bb1b8b6", true, false, true],
+  ["Abstract Bronze Sculpture", "Sculptures", 15999, 12999, 8, "SC-ABS-011", ["sculpture", "bronze"], "photo-1617596223856-a17ba0eac50b", false, false, false],
+  ["Woven Storage Basket", "New Arrivals", 2199, 0, 22, "NA-WSB-012", ["storage", "woven"], "photo-1640246944367-89e6a3eeab74", false, false, true],
 ];
 
-const upsertCategory = async ({ name, description }) => {
+const upsertCategory = async ({ name, description, image }) => {
   const slug = toSlug(name);
   const [category] = await Category.findOrCreate({
     where: { slug },
-    defaults: { name, slug, description, image: placeholderImage(slug), isActive: true },
+    defaults: { name, slug, description, image, isActive: true },
   });
   category.name = name;
   category.description = description;
+  category.image = image;
   category.isActive = true;
-  if (!category.image) category.image = placeholderImage(slug);
   await category.save();
   return category;
 };
 
 const upsertProduct = async (categoryByName, seed) => {
-  const [name, categoryName, price, discountPrice, stock, sku, tags, isFeatured, isBestseller, isNewArrival] = seed;
+  const [name, categoryName, price, discountPrice, stock, sku, tags, imageId, isFeatured, isBestseller, isNewArrival] = seed;
   const category = categoryByName.get(categoryName);
   if (!category) return null;
 
   const slug = toSlug(name);
-  const images = [0, 1].map((i) => placeholderImage(`${slug}-${i}`));
+  const images = [unsplash(imageId, 900), unsplash(imageId, 600)];
 
   const [product] = await Product.findOrCreate({
     where: { slug },
@@ -83,7 +78,7 @@ const upsertProduct = async (categoryByName, seed) => {
       slug,
       sku,
       category: category.id,
-      description: `${name} from the One Square Associates furniture collection.`,
+      description: `${name} — part of the One Square Associates home décor collection.`,
       price,
       discountPrice,
       currency: "INR",
@@ -96,7 +91,7 @@ const upsertProduct = async (categoryByName, seed) => {
       isNewArrival,
       status: "active",
       isPublished: true,
-      deliveryEstimate: "7-10 business days",
+      deliveryEstimate: "5-7 business days",
     },
   });
 
@@ -105,18 +100,28 @@ const upsertProduct = async (categoryByName, seed) => {
   product.discountPrice = discountPrice;
   product.stock = stock;
   product.tags = tags;
+  product.images = images;
   product.isFeatured = isFeatured;
   product.isBestseller = isBestseller;
   product.isNewArrival = isNewArrival;
   product.status = "active";
   product.isPublished = true;
-  if (!product.images || !product.images.length) product.images = images;
   await product.save();
   return product;
 };
 
 const run = async () => {
   await connectDB();
+
+  const keepSlugs = new Set(CATEGORIES.map((c) => toSlug(c.name)));
+  const stale = await Category.findAll({ where: {} });
+  const staleToRemove = stale.filter((c) => !keepSlugs.has(c.slug));
+  if (staleToRemove.length) {
+    const staleIds = staleToRemove.map((c) => c.id);
+    console.log(`[demo] removing ${staleToRemove.length} stale category/product set(s) from an older seed...`);
+    await Product.destroy({ where: { category: staleIds } });
+    await Category.destroy({ where: { id: staleIds } });
+  }
 
   console.log("[demo] upserting categories...");
   const categories = [];

@@ -1,7 +1,13 @@
 import { Op, fn, col } from "sequelize";
+import { v4 as uuidv4 } from "uuid";
 import Category from "../model/categoryModel.js";
 import Product from "../model/productModel.js";
-import { handleImageUpload } from "../config/cloudinary.js";
+import {
+  commitCategoryImage,
+  deleteCategoryImageFolder,
+  deleteCategoryImageUrl,
+  pruneOldCategoryImages,
+} from "../utils/categoryImageStorage.js";
 import { buildUniqueSlug, isValidId, likeTerm, toBool, toSlug } from "../utils/helpers.js";
 
 /** Only two levels are supported: top-level categories and their direct subcategories. */
@@ -82,6 +88,10 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Category name is required." });
     }
 
+    if (!req.file && !String(imageUrl || "").trim()) {
+      return res.status(400).json({ message: "Category image is required." });
+    }
+
     if (String(parentId).trim()) {
       await assertUsableParent(parentId);
     }
@@ -92,10 +102,11 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Category with this name already exists." });
     }
 
-    let image = String(imageUrl || "").trim();
-    if (req.file) image = await handleImageUpload(req.file);
+    const categoryId = uuidv4();
+    const image = req.file ? commitCategoryImage(req.file, categoryId) : String(imageUrl).trim();
 
     const category = await Category.create({
+      id: categoryId,
       name: String(name).trim(),
       slug,
       description: String(description),
@@ -157,8 +168,14 @@ export const updateCategory = async (req, res) => {
       }
     }
 
-    if (req.file) category.image = await handleImageUpload(req.file);
-    else if (imageUrl !== undefined) category.image = String(imageUrl).trim();
+    if (req.file) {
+      category.image = commitCategoryImage(req.file, category.id);
+      pruneOldCategoryImages(category.id, category.image.split("/").pop());
+    } else if (imageUrl !== undefined) {
+      const previousImage = category.image;
+      category.image = String(imageUrl).trim();
+      if (previousImage && previousImage !== category.image) deleteCategoryImageUrl(previousImage);
+    }
 
     category.updatedBy = req.adminUser?.id || null;
     await category.save();
@@ -222,6 +239,7 @@ export const deleteCategory = async (req, res) => {
     }
 
     await category.destroy();
+    deleteCategoryImageFolder(id);
 
     return res.status(200).json({
       message: inUse

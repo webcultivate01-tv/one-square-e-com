@@ -163,8 +163,9 @@ const Categories = () => {
   const validate = () => {
     const errors = {};
     if (!form.name.trim()) errors.name = "Category name is required.";
+    if (!newFile && !existingImage) errors.image = "Category image is required.";
     setFormErrors(errors);
-    if (errors.name) toast.error(errors.name);
+    if (errors.name || errors.image) toast.error(errors.name || errors.image);
     return Object.keys(errors).length === 0;
   };
 
@@ -450,7 +451,9 @@ const Categories = () => {
           </div>
 
           <div>
-            <label className="label">Image</label>
+            <label className="label">
+              Image <span className="text-red-500">*</span>
+            </label>
             <div className="flex items-center gap-3">
               {(newFile ? URL.createObjectURL(newFile) : existingImage) ? (
                 <img
@@ -468,7 +471,15 @@ const Categories = () => {
                   type="file"
                   accept="image/*"
                   className="input !py-1.5 !text-[12px]"
-                  onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    setNewFile(e.target.files?.[0] || null);
+                    setFormErrors((err) => {
+                      if (!err.image) return err;
+                      const next = { ...err };
+                      delete next.image;
+                      return next;
+                    });
+                  }}
                 />
                 {(existingImage || newFile) && (
                   <button
@@ -482,6 +493,7 @@ const Categories = () => {
                     Remove image
                   </button>
                 )}
+                {formErrors.image && <p className="text-[11px] text-red-600">{formErrors.image}</p>}
               </div>
             </div>
           </div>

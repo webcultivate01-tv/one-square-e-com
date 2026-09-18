@@ -9,16 +9,19 @@ import AdminShell from "./pages/Admin/AdminShell.jsx";
 import Dashboard from "./pages/Admin/Dashboard.jsx";
 import Products from "./pages/Admin/Products.jsx";
 import Categories from "./pages/Admin/Categories.jsx";
+import Orders from "./pages/Admin/Orders.jsx";
 import Employees from "./pages/Admin/Employees.jsx";
 import Profile from "./pages/Admin/Profile.jsx";
 import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import ChangePassword from "./pages/ChangePassword.jsx";
 import Home from "./pages/Home.jsx";
-import Shop from "./pages/Shop.jsx";
+import StoreProducts from "./pages/Products.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
+import Favorites from "./pages/Favorites.jsx";
+import NotFound from "./pages/NotFound.jsx";
 import TelecallerLogin from "./pages/TelecallerLogin.jsx";
 import SalesLogin from "./pages/SalesLogin.jsx";
 import TelecallerDashboard from "./pages/Telecaller/Dashboard.jsx";
@@ -58,10 +61,12 @@ const App = () => {
       {/* ---------------------------------------------------------- storefront */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/shop" element={<Shop />} />
+        <Route path="/products" element={<StoreProducts />} />
         <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/favorites" element={<Favorites />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
 
       {/* --------------------------------------------------------------- admin */}
@@ -94,7 +99,14 @@ const App = () => {
             </PermissionRoute>
           }
         />
-        <Route path="orders" element={<ComingSoon title="Orders" />} />
+        <Route
+          path="orders"
+          element={
+            <PermissionRoute permission="orders">
+              <Orders />
+            </PermissionRoute>
+          }
+        />
         <Route path="payments" element={<ComingSoon title="Payments" />} />
         <Route path="customers" element={<ComingSoon title="Customers" />} />
         <Route path="export" element={<ComingSoon title="Data Export" />} />
@@ -143,8 +155,6 @@ const App = () => {
           </RoleRoute>
         }
       />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

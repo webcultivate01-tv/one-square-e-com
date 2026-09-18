@@ -14,7 +14,7 @@ const SORT_OPTIONS = [
   { value: "name_asc", label: "Name: A to Z" },
 ];
 
-const Shop = () => {
+const Products = () => {
   const [params, setParams] = useSearchParams();
   const category = params.get("category") || "";
   const sort = params.get("sort") || "newest";
@@ -139,7 +139,7 @@ const Shop = () => {
         <SectionLoader rows={4} />
       ) : products.length ? (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((p) => (
               <ProductCard key={p._id} product={p} />
             ))}
@@ -162,4 +162,4 @@ const Shop = () => {
   );
 };
 
-export default Shop;
+export default Products;

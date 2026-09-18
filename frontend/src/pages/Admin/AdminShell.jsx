@@ -133,8 +133,8 @@ const AdminShell = () => {
           : Promise.resolve(0),
         can(userData, "orders")
           ? axios
-              .get(serverUrl + "/api/admin/getallorders", {
-                params: { status: "confirmed", limit: 1 },
+              .get(serverUrl + "/api/order-request/getall", {
+                params: { status: "pending", limit: 1 },
                 withCredentials: true,
               })
               .then((r) => r.data.total || 0)

@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import axios from "axios";
-import { FiCheck, FiChevronRight, FiMessageSquare, FiTruck } from "react-icons/fi";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import { FiCheck, FiChevronRight, FiHeart, FiTruck, FiZap } from "react-icons/fi";
 import { serverUrl } from "../App.jsx";
 import { EmptyState, formatMoney, SectionLoader } from "../components/ui.jsx";
 import EnquiryModal from "../components/EnquiryModal.jsx";
+import { selectIsWishlisted, toggleWishlist } from "../redux/wishlistSlice.js";
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const dispatch = useDispatch();
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const wishlisted = useSelector(selectIsWishlisted(product?._id));
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +53,7 @@ const ProductDetail = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <EmptyState title="Product not found" hint="This item may have been removed or is no longer available." />
         <div className="text-center mt-4">
-          <Link to="/shop" className="btn-brand-outline inline-flex">
+          <Link to="/products" className="btn-brand-outline inline-flex">
             Back to shop
           </Link>
         </div>
@@ -59,14 +64,19 @@ const ProductDetail = () => {
   const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.price;
   const images = product.images?.length ? product.images : [""];
 
+  const handleWishlist = () => {
+    dispatch(toggleWishlist(product));
+    toast.success(wishlisted ? `Removed "${product.name}" from favorites` : `Added "${product.name}" to favorites`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-center gap-1.5 text-[12.5px] text-slate-400 mb-6">
-        <Link to="/shop" className="hover:text-slate-600">Shop</Link>
+        <Link to="/products" className="hover:text-slate-600">Shop</Link>
         <FiChevronRight size={12} />
         {product.category?.name && (
           <>
-            <Link to={`/shop?category=${product.category._id}`} className="hover:text-slate-600">
+            <Link to={`/products?category=${product.category._id}`} className="hover:text-slate-600">
               {product.category.name}
             </Link>
             <FiChevronRight size={12} />
@@ -152,14 +162,35 @@ const ProductDetail = () => {
             </div>
           )}
 
-          <button type="button" onClick={() => setEnquiryOpen(true)} className="btn-brand mt-8 !px-6">
-            <FiMessageSquare size={15} />
-            Enquire about this piece
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 mt-8">
+            {!product.isOutOfStock && (
+              <button type="button" onClick={() => setEnquiryOpen(true)} className="btn-brand !px-6">
+                <FiZap size={15} />
+                Buy Now
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleWishlist}
+              className={`inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold px-5 py-2.5 transition-colors ${
+                wishlisted
+                  ? "border-rose-200 bg-rose-50 text-rose-600"
+                  : "border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600"
+              }`}
+            >
+              <FiHeart size={15} className={wishlisted ? "fill-rose-500" : ""} />
+              {wishlisted ? "In Favorites" : "Add to Favorites"}
+            </button>
+          </div>
         </div>
       </div>
 
-      <EnquiryModal open={enquiryOpen} onClose={() => setEnquiryOpen(false)} productName={product.name} />
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        productId={product._id}
+        productName={product.name}
+      />
     </div>
   );
 };

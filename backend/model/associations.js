@@ -2,6 +2,7 @@ import User from "./userModel.js";
 import Product from "./productModel.js";
 import Category from "./categoryModel.js";
 import Order from "./orderModel.js";
+import OrderRequest from "./orderRequestModel.js";
 
 /**
  * Loose, Mongo-style references — associations exist so controllers can
@@ -35,6 +36,13 @@ export const defineAssociations = () => {
     foreignKey: "user",
     targetKey: "id",
     as: "userDetails",
+    constraints: false,
+  });
+
+  OrderRequest.belongsTo(Product, {
+    foreignKey: "product",
+    targetKey: "id",
+    as: "productDetails",
     constraints: false,
   });
 

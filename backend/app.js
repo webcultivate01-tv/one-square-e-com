@@ -12,6 +12,7 @@ import adminRoutes from "./routes/adminRoute.js";
 import employeeRoutes from "./routes/employeeRoute.js";
 import customerRoutes from "./routes/customerRoute.js";
 import contactRoutes from "./routes/contactRoute.js";
+import orderRequestRoutes from "./routes/orderRequestRoute.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +72,7 @@ app.use("/api/admin/customers", customerRoutes);
 app.use("/api/admin", employeeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/order-request", orderRequestRoutes);
 
 /* ------------------------------------------------------- 404 + error handler */
 

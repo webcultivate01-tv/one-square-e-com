@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle, FiChevronLeft, FiChevronRight, FiInbox, FiX } from "react-icons/fi";
 
 /* ------------------------------------------------------------------ atoms */
@@ -75,6 +76,9 @@ const BADGE = {
   delivered: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Delivered"],
   cancelled: ["bg-rose-50 text-rose-700", "bg-rose-500", "Cancelled"],
   pending: ["bg-amber-50 text-amber-700", "bg-amber-500", "Pending"],
+  // buy-now request status
+  contacted: ["bg-blue-50 text-blue-700", "bg-blue-500", "Contacted"],
+  converted: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Converted"],
   // product status
   active: ["bg-emerald-50 text-emerald-700", "bg-emerald-500", "Active"],
   draft: ["bg-slate-100 text-slate-600", "bg-slate-400", "Draft"],
@@ -265,7 +269,7 @@ export const Modal = ({ open, onClose, title, subtitle, children, footer, size =
     xl: "max-w-5xl",
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
@@ -299,7 +303,8 @@ export const Modal = ({ open, onClose, title, subtitle, children, footer, size =
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
