@@ -10,6 +10,7 @@ import Dashboard from "./pages/Admin/Dashboard.jsx";
 import Products from "./pages/Admin/Products.jsx";
 import Categories from "./pages/Admin/Categories.jsx";
 import Orders from "./pages/Admin/Orders.jsx";
+import Enquiries from "./pages/Admin/Enquiries.jsx";
 import Employees from "./pages/Admin/Employees.jsx";
 import Profile from "./pages/Admin/Profile.jsx";
 import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
@@ -109,6 +110,14 @@ const App = () => {
         />
         <Route path="payments" element={<ComingSoon title="Payments" />} />
         <Route path="customers" element={<ComingSoon title="Customers" />} />
+        <Route
+          path="enquiries"
+          element={
+            <PermissionRoute permission="enquiries">
+              <Enquiries />
+            </PermissionRoute>
+          }
+        />
         <Route path="export" element={<ComingSoon title="Data Export" />} />
         <Route
           path="employees"

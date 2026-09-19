@@ -79,6 +79,11 @@ const BADGE = {
   // buy-now request status
   contacted: ["bg-blue-50 text-blue-700", "bg-blue-500", "Contacted"],
   converted: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Converted"],
+  // enquiry status
+  new: ["bg-amber-50 text-amber-700", "bg-amber-500", "New"],
+  in_progress: ["bg-blue-50 text-blue-700", "bg-blue-500", "In Progress"],
+  resolved: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Resolved"],
+  spam: ["bg-rose-50 text-rose-700", "bg-rose-500", "Spam"],
   // product status
   active: ["bg-emerald-50 text-emerald-700", "bg-emerald-500", "Active"],
   draft: ["bg-slate-100 text-slate-600", "bg-slate-400", "Draft"],

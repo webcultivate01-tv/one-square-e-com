@@ -7,6 +7,7 @@ import CategoryShowcase from "../components/CategoryShowcase.jsx";
 import FeaturedProducts from "../components/FeaturedProducts.jsx";
 import HeroSlider from "../components/HeroSlider.jsx";
 import ProductCard from "../components/ProductCard.jsx";
+import Reveal from "../components/Reveal.jsx";
 import StylingGuide from "../components/StylingGuide.jsx";
 import { CTA_BACKGROUND_IMAGE } from "../utils/site.js";
 
@@ -52,13 +53,15 @@ const Home = () => {
       {/* New arrivals */}
       {Boolean(newArrivals.length) && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-          <div className="mb-8">
+          <Reveal className="mb-8">
             <p className="eyebrow">Just landed</p>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">New arrivals</h2>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-            {newArrivals.map((p) => (
-              <ProductCard key={p._id} product={p} />
+            {newArrivals.map((p, i) => (
+              <Reveal key={p._id} delay={i * 0.08}>
+                <ProductCard product={p} />
+              </Reveal>
             ))}
           </div>
         </section>
@@ -70,7 +73,7 @@ const Home = () => {
         style={{ backgroundImage: `url(${CTA_BACKGROUND_IMAGE})` }}
       >
         <div className="absolute inset-0 bg-slate-900/60" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
+        <Reveal className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Discover Décor That Feels Like Home
           </h2>
@@ -90,7 +93,7 @@ const Home = () => {
               Contact Us
             </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
     </div>
   );

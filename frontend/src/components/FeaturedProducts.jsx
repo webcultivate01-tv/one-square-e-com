@@ -7,6 +7,7 @@ import { FaStar } from "react-icons/fa";
 import { FEATURED_PRODUCTS } from "../utils/site.js";
 import { formatMoney } from "./ui.jsx";
 import EnquiryModal from "./EnquiryModal.jsx";
+import Reveal from "./Reveal.jsx";
 import { selectIsWishlisted, toggleWishlist } from "../redux/wishlistSlice.js";
 
 const MOBILE_VISIBLE = 4;
@@ -128,7 +129,7 @@ const FeaturedProductCard = ({ product, hiddenOnMobile }) => {
 const FeaturedProducts = () => (
   <section className="bg-white py-16 sm:py-20">
     <div className="max-w-7xl mx-auto px-3 sm:px-6">
-      <div className="flex items-end justify-between mb-8 sm:mb-10">
+      <Reveal className="flex items-end justify-between mb-8 sm:mb-10">
         <div>
           <p className="eyebrow">Handpicked for you</p>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">Featured Products</h2>
@@ -142,11 +143,13 @@ const FeaturedProducts = () => (
         >
           View all
         </Link>
-      </div>
+      </Reveal>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
         {FEATURED_PRODUCTS.map((p, i) => (
-          <FeaturedProductCard key={p.name} product={p} hiddenOnMobile={i >= MOBILE_VISIBLE} />
+          <Reveal key={p.name} delay={Math.min(i, 5) * 0.07}>
+            <FeaturedProductCard product={p} hiddenOnMobile={i >= MOBILE_VISIBLE} />
+          </Reveal>
         ))}
       </div>
 

@@ -13,6 +13,7 @@ export const PERMISSION_KEYS = [
   "orders",
   "payments",
   "customers",
+  "enquiries",
   "reports",
 ];
 export const TAG_SUGGESTIONS = [

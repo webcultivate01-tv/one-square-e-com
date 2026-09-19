@@ -3,11 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
-  FiBell,
   FiCreditCard,
   FiDatabase,
   FiGrid,
   FiLogOut,
+  FiMail,
   FiMenu,
   FiSearch,
   FiShield,
@@ -23,6 +23,7 @@ import { serverUrl } from "../../App.jsx";
 import { can, clearUser } from "../../redux/userSlice.js";
 import { Avatar } from "../../components/ui.jsx";
 import CommandPalette from "../../components/CommandPalette.jsx";
+import NotificationBell from "../../components/NotificationBell.jsx";
 
 /** Nav model — `permission` mirrors the server's hasPermission keys. */
 const SECTIONS = [
@@ -41,7 +42,10 @@ const SECTIONS = [
   },
   {
     title: "Customers",
-    items: [{ label: "Customer Management", to: "/admin/customers", icon: FiUsers, permission: "customers" }],
+    items: [
+      { label: "Customer Management", to: "/admin/customers", icon: FiUsers, permission: "customers" },
+      { label: "Enquiry Management", to: "/admin/enquiries", icon: FiMail, permission: "enquiries" },
+    ],
   },
   {
     title: "System",
@@ -63,7 +67,8 @@ const AdminShell = () => {
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [alerts, setAlerts] = useState({ lowStock: 0, pendingOrders: 0 });
+  const [alerts, setAlerts] = useState({ lowStock: 0, pendingOrders: 0, newEnquiries: 0 });
+  const [notifications, setNotifications] = useState([]);
   const [now, setNow] = useState(() => new Date());
 
   /** Only render nav entries this admin can actually use. */
@@ -121,11 +126,11 @@ const AdminShell = () => {
     return () => clearInterval(timer);
   }, []);
 
-  /** Live sidebar/bell counts. Silent on failure — this is decoration. */
+  /** Live sidebar badges + bell notifications. Silent on failure — this is decoration. */
   const loadAlerts = useCallback(async () => {
-    if (!can(userData, "products") && !can(userData, "orders")) return;
+    if (!can(userData, "products") && !can(userData, "orders") && !can(userData, "enquiries")) return;
     try {
-      const [products, orders] = await Promise.all([
+      const [stats, orders, enquiries] = await Promise.all([
         can(userData, "products")
           ? axios
               .get(serverUrl + "/api/product/stats", { withCredentials: true })
@@ -134,13 +139,65 @@ const AdminShell = () => {
         can(userData, "orders")
           ? axios
               .get(serverUrl + "/api/order-request/getall", {
-                params: { status: "pending", limit: 1 },
+                params: { status: "pending", limit: 5 },
                 withCredentials: true,
               })
-              .then((r) => r.data.total || 0)
-          : Promise.resolve(0),
+              .then((r) => r.data)
+          : Promise.resolve({ total: 0, requests: [] }),
+        can(userData, "enquiries")
+          ? axios
+              .get(serverUrl + "/api/contact/getall", {
+                params: { status: "new", limit: 5 },
+                withCredentials: true,
+              })
+              .then((r) => r.data)
+          : Promise.resolve({ total: 0, enquiries: [] }),
       ]);
-      setAlerts({ lowStock: products, pendingOrders: orders });
+
+      const inventory = can(userData, "products")
+        ? await axios
+            .get(serverUrl + "/api/product/inventory", { withCredentials: true })
+            .then((r) => r.data.inventory || [])
+            .catch(() => [])
+        : [];
+
+      setAlerts({ lowStock: stats, pendingOrders: orders.total || 0, newEnquiries: enquiries.total || 0 });
+
+      const enquiryItems = (enquiries.enquiries || []).map((e) => ({
+        id: `enquiry-${e._id}`,
+        type: "enquiry",
+        title: `New enquiry from ${e.name}`,
+        subtitle: e.subject,
+        time: e.createdAt,
+        link: "/admin/enquiries",
+      }));
+
+      const orderItems = (orders.requests || []).map((r) => ({
+        id: `order-${r._id}`,
+        type: "order",
+        title: `New order request — ${r.productName}`,
+        subtitle: `${r.name} · Qty ${r.quantity}`,
+        time: r.createdAt,
+        link: "/admin/orders",
+      }));
+
+      const stockItems = inventory
+        .filter((p) => p.isLow || p.isOut)
+        .slice(0, 5)
+        .map((p) => ({
+          id: `stock-${p.productId}-${p.variant || "base"}`,
+          type: "stock",
+          title: p.isOut ? `${p.name} is out of stock` : `${p.name} is low on stock`,
+          subtitle: [p.variant, `${p.stock} left`].filter(Boolean).join(" · "),
+          time: null,
+          link: "/admin/products",
+        }));
+
+      setNotifications(
+        [...enquiryItems, ...orderItems, ...stockItems].sort(
+          (a, b) => new Date(b.time || 0) - new Date(a.time || 0)
+        )
+      );
     } catch {
       /* decoration only */
     }
@@ -167,10 +224,9 @@ const AdminShell = () => {
   const badgeFor = (label) => {
     if (label === "Product Management" && alerts.lowStock > 0) return alerts.lowStock;
     if (label === "Order Management" && alerts.pendingOrders > 0) return alerts.pendingOrders;
+    if (label === "Enquiry Management" && alerts.newEnquiries > 0) return alerts.newEnquiries;
     return null;
   };
-
-  const totalAlerts = alerts.lowStock + alerts.pendingOrders;
 
   const dateLabel = now.toLocaleDateString(undefined, {
     weekday: "short",
@@ -345,19 +401,7 @@ const AdminShell = () => {
               <FiSearch size={16} />
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate(alerts.lowStock ? "/admin/products" : "/admin/orders")}
-              className="relative w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors"
-              aria-label={`${totalAlerts} alerts`}
-            >
-              <FiBell size={16} />
-              {totalAlerts > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-red-100 animate-pulse">
-                  {totalAlerts > 99 ? "99+" : totalAlerts}
-                </span>
-              )}
-            </button>
+            <NotificationBell notifications={notifications} />
 
             <span className="w-px h-6 bg-slate-200 hidden sm:block" />
 

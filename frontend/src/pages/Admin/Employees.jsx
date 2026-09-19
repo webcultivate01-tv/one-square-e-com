@@ -49,7 +49,7 @@ const STATUS_OPTIONS = [
 
 /** Sensible starting point for each role — the admin can still adjust every box. */
 const DEFAULT_PERMISSIONS = {
-  telecaller: ["customers", "orders"],
+  telecaller: ["customers", "orders", "enquiries"],
   sales: ["products", "orders"],
 };
 
@@ -59,6 +59,7 @@ const PERMISSION_LABEL = {
   orders: "Orders",
   payments: "Payments",
   customers: "Customers",
+  enquiries: "Enquiries",
   reports: "Reports",
 };
 

@@ -4,6 +4,7 @@ import axios from "axios";
 import { FiSearch } from "react-icons/fi";
 import { serverUrl } from "../App.jsx";
 import ProductCard from "../components/ProductCard.jsx";
+import Reveal from "../components/Reveal.jsx";
 import { EmptyState, Pagination, SectionLoader } from "../components/ui.jsx";
 import useDebounced from "../hooks/useDebounced.js";
 
@@ -140,8 +141,10 @@ const Products = () => {
       ) : products.length ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((p) => (
-              <ProductCard key={p._id} product={p} />
+            {products.map((p, i) => (
+              <Reveal key={p._id} delay={Math.min(i, 7) * 0.05} amount={0.05}>
+                <ProductCard product={p} />
+              </Reveal>
             ))}
           </div>
           <div className="mt-8">
