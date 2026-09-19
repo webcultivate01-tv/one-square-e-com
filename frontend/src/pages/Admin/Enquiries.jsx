@@ -12,6 +12,7 @@ import {
   StatusBadge,
   formatDate,
 } from "../../components/ui.jsx";
+import LeadDetailDrawer from "../../components/LeadDetailDrawer.jsx";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All statuses" },
@@ -26,6 +27,7 @@ const Enquiries = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [openId, setOpenId] = useState(null);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 350);
@@ -162,7 +164,11 @@ const Enquiries = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {enquiries.map((e) => (
-                    <tr key={e._id} className="hover:bg-slate-50/60 transition-colors align-top">
+                    <tr
+                      key={e._id}
+                      onClick={() => setOpenId(e._id)}
+                      className="hover:bg-slate-50/60 transition-colors align-top cursor-pointer"
+                    >
                       <td className="td">
                         <p className="text-[13px] font-medium text-slate-800">{e.name}</p>
                         <p className="text-[12px] text-slate-500">{e.email}</p>
@@ -184,7 +190,7 @@ const Enquiries = () => {
                       <td className="td">
                         <StatusBadge status={e.status} />
                       </td>
-                      <td className="td">
+                      <td className="td" onClick={(ev) => ev.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <select
                             className="input !w-auto !py-1.5 !text-[12px]"
@@ -225,6 +231,14 @@ const Enquiries = () => {
           </>
         )}
       </div>
+
+      <LeadDetailDrawer
+        kind="enquiry"
+        lead={enquiries.find((x) => x._id === openId) || null}
+        statusOptions={STATUS_OPTIONS.filter((o) => o.value)}
+        onClose={() => setOpenId(null)}
+        onChange={(next) => setEnquiries((prev) => prev.map((x) => (x._id === next._id ? { ...x, ...next } : x)))}
+      />
     </div>
   );
 };

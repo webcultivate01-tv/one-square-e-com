@@ -53,7 +53,7 @@ const PublicFooter = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-12">
         <div>
           <Link to="/" className="inline-flex items-center">
-            <img src={LOGO_URL} alt="One Square Associates" className="h-11 w-auto object-contain" />
+            <img src={LOGO_URL} alt="One Square Associates" loading="lazy" decoding="async" className="h-11 w-auto object-contain" />
           </Link>
           <p className="text-[13px] text-slate-500 mt-4 leading-relaxed max-w-xs">{SITE_TAGLINE}</p>
           <div className="flex items-center gap-3 mt-6">

@@ -1,13 +1,12 @@
 import { FiTrendingUp, FiBox, FiShoppingBag, FiUsers } from "react-icons/fi";
 import { useSelector } from "react-redux";
-import StaffShell from "../../components/StaffShell.jsx";
 import { EmptyState } from "../../components/ui.jsx";
 
 const SalesDashboard = () => {
   const { userData } = useSelector((state) => state.user);
 
   return (
-    <StaffShell icon={FiTrendingUp} roleLabel="Sales" loginPath="/sales/login">
+    <>
       <h1 className="page-title">Hi, {userData?.name?.split(" ")[0]}</h1>
       <p className="page-subtitle">Your product catalog, orders and customer pipeline will live here.</p>
 
@@ -34,7 +33,7 @@ const SalesDashboard = () => {
           hint="This workspace is a placeholder — the Sales console (catalog, orders, leads) will be built next."
         />
       </div>
-    </StaffShell>
+    </>
   );
 };
 

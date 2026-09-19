@@ -12,6 +12,7 @@ import {
   StatusBadge,
   formatDate,
 } from "../../components/ui.jsx";
+import LeadDetailDrawer from "../../components/LeadDetailDrawer.jsx";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All statuses" },
@@ -26,6 +27,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [openId, setOpenId] = useState(null);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 350);
@@ -145,13 +147,19 @@ const Orders = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {requests.map((r) => (
-                    <tr key={r._id} className="hover:bg-slate-50/60 transition-colors align-top">
+                    <tr
+                      key={r._id}
+                      onClick={() => setOpenId(r._id)}
+                      className="hover:bg-slate-50/60 transition-colors align-top cursor-pointer"
+                    >
                       <td className="td">
                         <div className="flex items-center gap-2.5">
                           {r.product?.images?.[0] ? (
                             <img
                               src={r.product.images[0]}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="w-9 h-9 rounded-lg object-cover bg-slate-100 shrink-0"
                             />
                           ) : (
@@ -184,7 +192,7 @@ const Orders = () => {
                       <td className="td">
                         <StatusBadge status={r.status} />
                       </td>
-                      <td className="td">
+                      <td className="td" onClick={(ev) => ev.stopPropagation()}>
                         <select
                           className="input !w-auto !py-1.5 !text-[12px]"
                           value={r.status}
@@ -214,6 +222,14 @@ const Orders = () => {
           </>
         )}
       </div>
+
+      <LeadDetailDrawer
+        kind="order_request"
+        lead={requests.find((x) => x._id === openId) || null}
+        statusOptions={STATUS_OPTIONS.filter((o) => o.value)}
+        onClose={() => setOpenId(null)}
+        onChange={(next) => setRequests((prev) => prev.map((x) => (x._id === next._id ? { ...x, ...next } : x)))}
+      />
     </div>
   );
 };

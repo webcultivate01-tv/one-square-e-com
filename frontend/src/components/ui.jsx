@@ -231,6 +231,8 @@ export const Avatar = ({ name = "", src = "", size = 36, className = "" }) => {
       <img
         src={src}
         alt={name}
+        loading="lazy"
+        decoding="async"
         style={{ width: size, height: size }}
         className={`rounded-lg object-cover bg-slate-100 shrink-0 ${className}`}
       />

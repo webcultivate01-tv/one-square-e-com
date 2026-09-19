@@ -9,6 +9,7 @@ import { isStaffRole, setUserData } from "../redux/userSlice.js";
 import { LOGO_URL } from "../utils/site.js";
 import PasswordField from "../components/PasswordField.jsx";
 import { FullPageLoader, Spinner } from "../components/ui.jsx";
+import ForgotPassword from "../components/ForgotPassword.jsx";
 
 /**
  * The role check happens BEFORE any navigation, so a customer account
@@ -24,12 +25,27 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   if (!authChecked) return <FullPageLoader label="Checking your session..." />;
 
   // Already signed in as staff — skip the form.
   if (userData && isStaffRole(userData.role)) {
     return <Navigate to={location.state?.from || "/admin"} replace />;
+  }
+  if (forgot) {
+    return (
+      <ForgotPassword
+        roleLabel="Admin"
+        initialEmail={email}
+        onBack={(newEmail) => {
+          if (newEmail) setEmail(newEmail);
+          setPassword("");
+          setError("");
+          setForgot(false);
+        }}
+      />
+    );
   }
 
   const submit = async (e) => {
@@ -124,6 +140,16 @@ const AdminLogin = () => {
               autoComplete="current-password"
               disabled={busy}
             />
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setForgot(true)}
+                className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                disabled={busy}
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary w-full !py-2.5" disabled={busy}>

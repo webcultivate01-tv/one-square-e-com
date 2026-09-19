@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { FiAlertOctagon, FiTool } from "react-icons/fi";
+import { FiAlertOctagon, FiGrid, FiMail, FiShoppingCart, FiTag, FiTool, FiUser } from "react-icons/fi";
+import { BsBoxSeam } from "react-icons/bs";
+import StaffShell from "./components/StaffShell.jsx";
 import useGetCurrentUser from "./hooks/useGetCurrentUser.js";
 import AdminRoute from "./components/AdminRoute.jsx";
 import PermissionRoute from "./components/PermissionRoute.jsx";
@@ -27,6 +29,36 @@ import TelecallerLogin from "./pages/TelecallerLogin.jsx";
 import SalesLogin from "./pages/SalesLogin.jsx";
 import TelecallerDashboard from "./pages/Telecaller/Dashboard.jsx";
 import SalesDashboard from "./pages/Sales/Dashboard.jsx";
+
+/** Admin-granted modules an employee portal can expose — `permission` mirrors the server's hasPermission keys. */
+const MODULES = [
+  { label: "Products", path: "products", icon: BsBoxSeam, permission: "products", Page: Products },
+  { label: "Categories", path: "categories", icon: FiTag, permission: "categories", Page: Categories },
+  { label: "Orders", path: "orders", icon: FiShoppingCart, permission: "orders", Page: Orders },
+  { label: "Enquiries", path: "enquiries", icon: FiMail, permission: "enquiries", Page: Enquiries },
+];
+
+const portalNav = (base) => [
+  { label: "Dashboard", to: base, icon: FiGrid, end: true },
+  ...MODULES.map((m) => ({ label: m.label, to: `${base}/${m.path}`, icon: m.icon, permission: m.permission })),
+  { label: "My Profile", to: `${base}/profile`, icon: FiUser },
+];
+
+const portalModuleRoutes = (base) =>
+  MODULES.map((m) => (
+    <Route
+      key={m.path}
+      path={m.path}
+      element={
+        <PermissionRoute permission={m.permission} homePath={base}>
+          <m.Page />
+        </PermissionRoute>
+      }
+    />
+  ));
+
+const TELECALLER_NAV = portalNav("/talecaller");
+const SALES_NAV = portalNav("/sales");
 
 /** The deployed backend URL — imported wherever an API call is made. */
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
@@ -145,10 +177,20 @@ const App = () => {
             loginPath="/talecaller/login"
             changePasswordPath="/talecaller/change-password"
           >
-            <TelecallerDashboard />
+            <StaffShell
+              roleLabel="Telecaller"
+              basePath="/talecaller"
+              loginPath="/talecaller/login"
+              navItems={TELECALLER_NAV}
+            />
           </RoleRoute>
         }
-      />
+      >
+        <Route index element={<TelecallerDashboard />} />
+        {portalModuleRoutes("/talecaller")}
+        <Route path="profile" element={<Profile />} />
+        <Route path="*" element={<Navigate to="/talecaller" replace />} />
+      </Route>
 
       {/* --------------------------------------------------------------- sales */}
       <Route path="/sales/login" element={<SalesLogin />} />
@@ -160,10 +202,15 @@ const App = () => {
         path="/sales"
         element={
           <RoleRoute role="sales" loginPath="/sales/login" changePasswordPath="/sales/change-password">
-            <SalesDashboard />
+            <StaffShell roleLabel="Sales" basePath="/sales" loginPath="/sales/login" navItems={SALES_NAV} />
           </RoleRoute>
         }
-      />
+      >
+        <Route index element={<SalesDashboard />} />
+        {portalModuleRoutes("/sales")}
+        <Route path="profile" element={<Profile />} />
+        <Route path="*" element={<Navigate to="/sales" replace />} />
+      </Route>
     </Routes>
   );
 };

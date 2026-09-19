@@ -7,10 +7,11 @@
     @apply font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   body {
-    @apply font-sans bg-[#F7F8FA] text-slate-700 antialiased;
+    @apply font-sans bg-[#F7F8FA] text-slate-700 antialiased overflow-x-hidden;
   }
 
   /* Form controls don't inherit font-family by default in every browser. */

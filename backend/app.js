@@ -13,6 +13,8 @@ import employeeRoutes from "./routes/employeeRoute.js";
 import customerRoutes from "./routes/customerRoute.js";
 import contactRoutes from "./routes/contactRoute.js";
 import orderRequestRoutes from "./routes/orderRequestRoute.js";
+import leadRoutes from "./routes/leadRoute.js";
+import salesOrderRoutes from "./routes/salesOrderRoute.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -73,6 +75,8 @@ app.use("/api/admin", employeeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/order-request", orderRequestRoutes);
+app.use("/api/lead", leadRoutes);
+app.use("/api/sales-order", salesOrderRoutes);
 
 /* ------------------------------------------------------- 404 + error handler */
 

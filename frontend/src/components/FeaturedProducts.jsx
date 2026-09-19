@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { serverUrl } from "../App.jsx";
+import ProductCard from "./ProductCard.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { FiZap, FiHeart } from "react-icons/fi";
@@ -26,7 +29,7 @@ const FeaturedProductCard = ({ product, hiddenOnMobile }) => {
   const discountPct = hasDiscount
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : 0;
-  const shopLink = `/products?q=${encodeURIComponent(product.category)}`;
+  const shopLink = "/products";
 
   const handleWishlist = (e) => {
     e.preventDefault();
@@ -126,7 +129,25 @@ const FeaturedProductCard = ({ product, hiddenOnMobile }) => {
   );
 };
 
-const FeaturedProducts = () => (
+const FeaturedProducts = () => {
+  const [liveProducts, setLiveProducts] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    axios
+      .get(serverUrl + "/api/product/getpublished", { params: { sort: "newest", limit: 10 } })
+      .then((res) => {
+        if (!cancelled) setLiveProducts(res.data.products || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const useLive = liveProducts.length > 0;
+
+  return (
   <section className="bg-white py-16 sm:py-20">
     <div className="max-w-7xl mx-auto px-3 sm:px-6">
       <Reveal className="flex items-end justify-between mb-8 sm:mb-10">
@@ -146,11 +167,21 @@ const FeaturedProducts = () => (
       </Reveal>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-5">
-        {FEATURED_PRODUCTS.map((p, i) => (
-          <Reveal key={p.name} delay={Math.min(i, 5) * 0.07}>
-            <FeaturedProductCard product={p} hiddenOnMobile={i >= MOBILE_VISIBLE} />
-          </Reveal>
-        ))}
+        {useLive
+          ? liveProducts.map((p, i) => (
+              <Reveal
+                key={p._id}
+                delay={Math.min(i, 5) * 0.07}
+                className={i >= MOBILE_VISIBLE ? "hidden sm:block" : ""}
+              >
+                <ProductCard product={p} />
+              </Reveal>
+            ))
+          : FEATURED_PRODUCTS.map((p, i) => (
+              <Reveal key={p.name} delay={Math.min(i, 5) * 0.07}>
+                <FeaturedProductCard product={p} hiddenOnMobile={i >= MOBILE_VISIBLE} />
+              </Reveal>
+            ))}
       </div>
 
       <div className="mt-9 flex justify-center sm:hidden">
@@ -166,6 +197,7 @@ const FeaturedProducts = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default FeaturedProducts;

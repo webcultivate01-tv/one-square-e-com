@@ -109,7 +109,7 @@ export const toProductDTO = (p) => {
     discountPrice: p.discountPrice || 0,
     costPrice: p.costPrice || 0,
     tax: p.tax || 0,
-    currency: p.currency || "USD",
+    currency: "INR", // the store sells in INR only
     stock: p.stock || 0,
     lowStockThreshold: p.lowStockThreshold ?? 10,
     minOrderQuantity: p.minOrderQuantity ?? 1,
@@ -132,6 +132,7 @@ export const toProductDTO = (p) => {
     metaTitle: p.metaTitle || "",
     metaDescription: p.metaDescription || "",
     seoKeywords: p.seoKeywords || [],
+    schemaMarkup: p.schemaMarkup || "",
     isFeatured: Boolean(p.isFeatured),
     isBestseller: Boolean(p.isBestseller),
     isTrending: Boolean(p.isTrending),

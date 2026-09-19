@@ -61,14 +61,15 @@ const shell = (title, body) => `
   </div>
 </div>`;
 
-export const sendOtpMail = (to, otp) =>
+export const sendPasswordResetMail = (to, name, otp) =>
   sendMail({
     to,
-    subject: "Your GOBOXLY verification code",
+    subject: "Your GOBOXLY password reset code",
     html: shell(
-      "Verification code",
-      `<p>Use the code below to continue. It expires in 10 minutes.</p>
-       <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#2563eb">${otp}</p>`
+      "Reset your password",
+      `<p>Hi ${name || "there"}, use the code below to reset your password. It expires in 10 minutes.</p>
+       <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#2563eb">${otp}</p>
+       <p>If you did not request this, you can ignore this email — your password will not change.</p>`
     ),
   });
 

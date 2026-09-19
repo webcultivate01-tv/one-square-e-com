@@ -2,7 +2,9 @@ import jwt from "jsonwebtoken";
 
 export const TOKEN_TTL_DAYS = 7;
 
-/** Sign a 7-day session token. Payload key is `id` (isAuth reads decoded.id). */
+/** Sign a 7-day session token. Payload key is `id` (isAu
+ * 
+ * th reads decoded.id). */
 export const generateToken = (userId) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error("JWT_SECRET is required");

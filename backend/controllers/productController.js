@@ -13,7 +13,6 @@ import {
   buildUniqueSlug,
   isValidId,
   isFilterActive,
-  likeTerm,
   parsePaging,
   resolveSort,
   safeJson,
@@ -23,6 +22,7 @@ import {
   toStringArray,
 } from "../utils/helpers.js";
 import { toProductDTO } from "../utils/dto.js";
+import { buildSearchClauses } from "../utils/searchTerms.js";
 
 const SORT_MAP = {
   newest: [["createdAt", "DESC"]],
@@ -87,10 +87,6 @@ const readProductBody = (body = {}) => {
   if (body.name !== undefined) set("name", String(body.name).trim());
   if (body.description !== undefined) set("description", String(body.description));
   if (body.richDescription !== undefined) set("richDescription", String(body.richDescription));
-  if (body.sku !== undefined) {
-    const sku = String(body.sku).trim();
-    set("sku", sku === "" ? null : sku);
-  }
   if (body.brand !== undefined) set("brand", String(body.brand).trim());
   if (body.category !== undefined) set("category", body.category);
   if (body.subcategory !== undefined) set("subcategory", String(body.subcategory).trim());
@@ -99,9 +95,7 @@ const readProductBody = (body = {}) => {
   if (body.price !== undefined) set("price", Math.max(0, toNum(body.price, 0)));
   if (body.discountPrice !== undefined)
     set("discountPrice", Math.max(0, toNum(body.discountPrice, 0)));
-  if (body.costPrice !== undefined) set("costPrice", Math.max(0, toNum(body.costPrice, 0)));
-  if (body.tax !== undefined) set("tax", Math.max(0, toNum(body.tax, 0)));
-  if (body.currency !== undefined) set("currency", String(body.currency || "USD"));
+  set("currency", "INR");
 
   if (body.stock !== undefined) set("stock", Math.max(0, Math.trunc(toNum(body.stock, 0))));
   if (body.lowStockThreshold !== undefined)
@@ -129,6 +123,7 @@ const readProductBody = (body = {}) => {
   if (body.metaDescription !== undefined)
     set("metaDescription", String(body.metaDescription).trim());
   if (body.seoKeywords !== undefined) set("seoKeywords", toStringArray(body.seoKeywords));
+  if (body.schemaMarkup !== undefined) set("schemaMarkup", stripSchemaScriptTag(body.schemaMarkup));
 
   if (body.isFeatured !== undefined) set("isFeatured", toBool(body.isFeatured));
   if (body.isBestseller !== undefined) set("isBestseller", toBool(body.isBestseller));
@@ -141,7 +136,32 @@ const readProductBody = (body = {}) => {
   return out;
 };
 
+/** Accepts raw JSON-LD or JSON-LD wrapped in a <script> tag; returns the bare JSON string. */
+const stripSchemaScriptTag = (raw) =>
+  String(raw || "")
+    .trim()
+    .replace(/^<script[^>]*>/i, "")
+    .replace(/<\/script>\s*$/i, "")
+    .trim();
+
+/** Put the chosen thumbnail first — the storefront treats images[0] as the main image. */
+const applyThumbnail = (images, uploaded, ref) => {
+  if (!ref) return images;
+  let chosen = null;
+  if (ref.startsWith("new:")) chosen = uploaded[Number(ref.slice(4))];
+  else if (images.includes(ref)) chosen = ref;
+  if (!chosen) return images;
+  return [chosen, ...images.filter((url) => url !== chosen)];
+};
+
 const validateProduct = (data, { isCreate }) => {
+  if (data.schemaMarkup) {
+    try {
+      JSON.parse(data.schemaMarkup);
+    } catch {
+      return "The schema markup is not valid JSON.";
+    }
+  }
   if (isCreate && !data.name) return "Product name is required.";
   if (data.name !== undefined && !data.name) return "Product name is required.";
   if (isCreate && !data.category) return "Category is required.";
@@ -190,13 +210,17 @@ export const getPublishedProducts = async (req, res) => {
     if (isFilterActive(req.query.category) && isValidId(req.query.category)) {
       dbWhere.category = req.query.category;
     }
+    let translated = [];
     if (req.query.q) {
-      const term = likeTerm(req.query.q);
-      dbWhere[Op.or] = [
-        { name: { [Op.like]: term } },
-        { brand: { [Op.like]: term } },
-        { tags: { [Op.like]: term } },
-      ];
+      const search = buildSearchClauses(req.query.q, [
+        "name",
+        "brand",
+        "tags",
+        "description",
+        "$categoryDetails.name$",
+      ]);
+      translated = search.translated;
+      if (search.clauses.length) dbWhere[Op.or] = search.clauses;
     }
 
     const order = resolveSort(SORT_MAP, req.query.sort, "newest");
@@ -212,6 +236,7 @@ export const getPublishedProducts = async (req, res) => {
     return res.status(200).json({
       products: rows.map((p) => toProductDTO(withVirtuals(p))),
       pagination: { page, limit, total: count, pages: Math.max(1, Math.ceil(count / limit)) },
+      searchTranslated: translated,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -228,14 +253,8 @@ export const getAllProducts = async (req, res) => {
     if (toBool(req.query.includeDeleted) !== true) dbWhere.isDeleted = { [Op.ne]: true };
 
     if (req.query.q) {
-      const term = likeTerm(req.query.q);
-      dbWhere[Op.or] = [
-        { name: { [Op.like]: term } },
-        { slug: { [Op.like]: term } },
-        { sku: { [Op.like]: term } },
-        { brand: { [Op.like]: term } },
-        { tags: { [Op.like]: term } },
-      ];
+      const { clauses } = buildSearchClauses(req.query.q, ["name", "slug", "sku", "brand", "tags"]);
+      if (clauses.length) dbWhere[Op.or] = clauses;
     }
     if (isFilterActive(req.query.category) && isValidId(req.query.category)) {
       dbWhere.category = req.query.category;
@@ -394,7 +413,7 @@ export const createProduct = async (req, res) => {
       id: productId,
       ...data,
       variants,
-      images: [...pastedUrls, ...uploaded],
+      images: applyThumbnail([...pastedUrls, ...uploaded], uploaded, req.body.thumbnailRef),
       slug: await buildUniqueSlug(Product, data.name),
       createdBy: req.adminUser?.id || null,
       updatedBy: req.adminUser?.id || null,
@@ -431,6 +450,7 @@ export const updateProduct = async (req, res) => {
 
     // Merge with current values so cross-field validation sees the final state.
     const merged = {
+      schemaMarkup: data.schemaMarkup,
       price: data.price ?? product.price,
       discountPrice: data.discountPrice ?? product.discountPrice,
       minOrderQuantity: data.minOrderQuantity ?? product.minOrderQuantity,
@@ -471,7 +491,11 @@ export const updateProduct = async (req, res) => {
     Object.assign(product, data);
 
     // Media: existing URLs the client kept + newly uploaded files.
-    if (req.body.imageUrls !== undefined || (req.files || []).length) {
+    if (
+      req.body.imageUrls !== undefined ||
+      (req.files || []).length ||
+      req.body.thumbnailRef !== undefined
+    ) {
       const rawKept = toStringArray(safeJson(req.body.imageUrls, product.images));
       // The client may still be quoting pre-move URLs if the category changed in this same request.
       const kept =
@@ -483,7 +507,13 @@ export const updateProduct = async (req, res) => {
       if (removed.length) deleteProductImageUrls(removed);
 
       const uploaded = commitProductImages(req.files || [], categorySlug, id);
-      product.images = [...kept, ...uploaded];
+      product.images = applyThumbnail(
+        [...kept, ...uploaded],
+        uploaded,
+        req.body.thumbnailRef && categorySlug !== originalCategorySlug && !req.body.thumbnailRef.startsWith("new:")
+          ? remapProductImageUrls([req.body.thumbnailRef], id, originalCategorySlug, categorySlug)[0]
+          : req.body.thumbnailRef
+      );
     }
 
     product.updatedBy = req.adminUser?.id || null;

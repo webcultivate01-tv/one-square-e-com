@@ -270,7 +270,7 @@ const AdminShell = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto scrollbar-slim px-3 pb-4">
+      <nav className="lg:flex-1 overflow-y-auto scrollbar-slim px-3 pb-4">
         <ul className="space-y-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -342,16 +342,24 @@ const AdminShell = () => {
       <div className="hidden lg:flex">{sidebar}</div>
 
       {/* Mobile drawer */}
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-            onClick={() => setMobileNavOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative animate-slideInRight">{sidebar}</div>
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${mobileNavOpen ? "" : "pointer-events-none"}`}
+        aria-hidden={!mobileNavOpen}
+      >
+        <div
+          className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+            mobileNavOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setMobileNavOpen(false)}
+        />
+        <div
+          className={`absolute inset-y-0 left-0 max-w-[85vw] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform ${
+            mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+          }`}
+        >
+          {sidebar}
         </div>
-      )}
+      </div>
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Topbar */}

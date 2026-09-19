@@ -1,14 +1,13 @@
 import { MdSupportAgent } from "react-icons/md";
 import { FiPhoneCall, FiUsers, FiClipboard } from "react-icons/fi";
 import { useSelector } from "react-redux";
-import StaffShell from "../../components/StaffShell.jsx";
 import { EmptyState } from "../../components/ui.jsx";
 
 const TelecallerDashboard = () => {
   const { userData } = useSelector((state) => state.user);
 
   return (
-    <StaffShell icon={MdSupportAgent} roleLabel="Telecaller" loginPath="/talecaller/login">
+    <>
       <h1 className="page-title">Hi, {userData?.name?.split(" ")[0]}</h1>
       <p className="page-subtitle">Your call queue, customer lookups and follow-ups will live here.</p>
 
@@ -35,7 +34,7 @@ const TelecallerDashboard = () => {
           hint="This workspace is a placeholder — the Telecaller console (call queue, customer lookup, follow-ups) will be built next."
         />
       </div>
-    </StaffShell>
+    </>
   );
 };
 

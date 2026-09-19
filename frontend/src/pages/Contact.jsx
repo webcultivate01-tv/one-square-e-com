@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { FiClock, FiMail, FiMapPin, FiMessageSquare, FiPhone, FiSend, FiTag, FiUser } from "react-icons/fi";
+import { FiClock, FiMail, FiMapPin, FiPhone, FiSend, FiUser } from "react-icons/fi";
+import { FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { serverUrl } from "../App.jsx";
 import Reveal from "../components/Reveal.jsx";
 import { Spinner } from "../components/ui.jsx";
@@ -10,7 +11,7 @@ import {
   CONTACT_EMAIL,
   CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_TEL,
-  CONTACT_WHATSAPP,
+  SOCIAL_LINKS,
 } from "../utils/site.js";
 
 const INFO = [
@@ -24,10 +25,15 @@ const FIELDS = [
   { key: "name", label: "Full name", icon: FiUser, placeholder: "e.g. Aarav Sharma", required: true },
   { key: "email", label: "Email address", icon: FiMail, type: "email", placeholder: "you@example.com", required: true },
   { key: "phone", label: "Phone number", icon: FiPhone, placeholder: "+91 98765 43210", required: true },
-  { key: "subject", label: "Subject", icon: FiTag, placeholder: "What's this about?", required: true },
 ];
 
-const EMPTY_FORM = { name: "", email: "", phone: "", subject: "", message: "" };
+const SOCIALS = [
+  { Icon: FaInstagram, href: SOCIAL_LINKS.instagram, label: "Instagram" },
+  { Icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook" },
+  { Icon: FaWhatsapp, href: SOCIAL_LINKS.whatsapp, label: "WhatsApp" },
+];
+
+const EMPTY_FORM = { name: "", email: "", phone: "", message: "" };
 
 const Contact = () => {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -59,7 +65,7 @@ const Contact = () => {
     <div>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-14 relative">
         <Reveal className="grid lg:grid-cols-5 rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-200 overflow-hidden bg-white">
-          <div className="lg:col-span-2 bg-gradient-to-br from-brand-500 to-brand-600 text-white p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
+          <div className="order-2 lg:order-1 lg:col-span-2 bg-gradient-to-br from-brand-500 to-brand-600 text-white p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-white/10 rounded-full" aria-hidden="true" />
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full translate-x-1/3 -translate-y-1/3" aria-hidden="true" />
 
@@ -90,18 +96,23 @@ const Contact = () => {
               </div>
             </div>
 
-            <a
-              href={`https://wa.me/${CONTACT_WHATSAPP}`}
-              target="_blank"
-              rel="noreferrer"
-              className="relative mt-6 inline-flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 transition-colors rounded-lg px-3.5 py-2 text-[12.5px] font-semibold w-fit"
-            >
-              <FiMessageSquare size={13} />
-              Chat with us on WhatsApp
-            </a>
+            <div className="relative mt-6 flex items-center gap-2.5">
+              {SOCIALS.map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 transition-colors flex items-center justify-center"
+                >
+                  <Icon size={15} />
+                </a>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={submit} className="lg:col-span-3 p-6 sm:p-7 space-y-3">
+          <form onSubmit={submit} className="order-1 lg:order-2 lg:col-span-3 p-6 sm:p-7 space-y-3">
             <div>
               <h2 className="text-base font-semibold text-slate-900">Send us a message</h2>
               <p className="text-[12px] text-slate-500 mt-0.5">
@@ -111,7 +122,7 @@ const Contact = () => {
 
             <div className="grid sm:grid-cols-2 gap-3 pt-1">
               {FIELDS.map(({ key, label, icon: Icon, type = "text", placeholder, required }) => (
-                <div key={key} className={key === "subject" ? "sm:col-span-2" : ""}>
+                <div key={key}>
                   <label className="label" htmlFor={`contact-${key}`}>
                     {label} {required && <span className="text-brand-500">*</span>}
                   </label>

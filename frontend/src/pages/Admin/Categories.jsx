@@ -336,6 +336,8 @@ const Categories = () => {
                           <img
                             src={c.image}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="w-8 h-8 rounded-lg object-cover bg-slate-100 shrink-0"
                           />
                         ) : (

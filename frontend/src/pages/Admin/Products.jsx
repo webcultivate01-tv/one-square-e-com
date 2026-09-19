@@ -9,6 +9,7 @@ import {
   FiRefreshCw,
   FiRotateCcw,
   FiSearch,
+  FiStar,
   FiTrash2,
   FiX,
 } from "react-icons/fi";
@@ -88,7 +89,6 @@ const emptyForm = {
   name: "",
   description: "",
   richDescription: "",
-  sku: "",
   brand: "",
   category: "",
   subcategory: "",
@@ -101,9 +101,6 @@ const emptyForm = {
   isNewArrival: false,
   price: "",
   discountPrice: "",
-  costPrice: "",
-  tax: "",
-  currency: "USD",
   stock: "0",
   lowStockThreshold: "10",
   minOrderQuantity: "1",
@@ -117,6 +114,23 @@ const emptyForm = {
   metaTitle: "",
   metaDescription: "",
   seoKeywords: "",
+  schemaMarkup: "",
+};
+
+/** Returns an error message when the schema text isn't valid JSON-LD, else "". */
+const checkSchema = (raw) => {
+  const text = raw
+    .trim()
+    .replace(/^<script[^>]*>/i, "")
+    .replace(/<\/script>\s*$/i, "")
+    .trim();
+  if (!text) return "";
+  try {
+    JSON.parse(text);
+    return "";
+  } catch (err) {
+    return `Schema is not valid JSON: ${err.message}`;
+  }
 };
 
 /** Which tab a given field lives on — used to jump to the first error. */
@@ -128,6 +142,7 @@ const FIELD_TAB = {
   minOrderQuantity: "inventory",
   maxOrderQuantity: "inventory",
   variants: "variants",
+  schemaMarkup: "seo",
 };
 
 const Products = () => {
@@ -166,6 +181,8 @@ const Products = () => {
   const [formErrors, setFormErrors] = useState({});
   const [existingImages, setExistingImages] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
+  // Thumbnail = an existing image URL, or a File from newFiles. null → first image.
+  const [thumbKey, setThumbKey] = useState(null);
   const [optionTypes, setOptionTypes] = useState([]);
   const [optionValues, setOptionValues] = useState({});
   const [variants, setVariants] = useState([]);
@@ -299,6 +316,7 @@ const Products = () => {
     setFormErrors({});
     setExistingImages([]);
     setNewFiles([]);
+    setThumbKey(null);
     setOptionTypes([]);
     setOptionValues({});
     setVariants([]);
@@ -312,7 +330,6 @@ const Products = () => {
       name: product.name || "",
       description: product.description || "",
       richDescription: product.richDescription || "",
-      sku: product.sku || "",
       brand: product.brand || "",
       category: product.category?._id || product.category || "",
       subcategory: product.subcategory || "",
@@ -325,9 +342,6 @@ const Products = () => {
       isNewArrival: Boolean(product.isNewArrival),
       price: String(product.price ?? ""),
       discountPrice: String(product.discountPrice || ""),
-      costPrice: String(product.costPrice || ""),
-      tax: String(product.tax || ""),
-      currency: product.currency || "USD",
       stock: String(product.stock ?? 0),
       lowStockThreshold: String(product.lowStockThreshold ?? 10),
       minOrderQuantity: String(product.minOrderQuantity ?? 1),
@@ -341,10 +355,12 @@ const Products = () => {
       metaTitle: product.metaTitle || "",
       metaDescription: product.metaDescription || "",
       seoKeywords: (product.seoKeywords || []).join(", "),
+      schemaMarkup: product.schemaMarkup || "",
     });
     setFormErrors({});
     setExistingImages(product.images || []);
     setNewFiles([]);
+    setThumbKey(product.images?.[0] || null);
 
     const loaded = product.variants || [];
     setVariants(loaded);
@@ -390,6 +406,9 @@ const Products = () => {
     if (min < 1) errors.minOrderQuantity = "Minimum order quantity must be at least 1.";
     if (max < min) errors.maxOrderQuantity = "Maximum must be greater than or equal to the minimum.";
 
+    const schemaError = checkSchema(form.schemaMarkup);
+    if (schemaError) errors.schemaMarkup = schemaError;
+
     const skus = variants.map((v) => String(v.sku || "").trim().toLowerCase());
     if (variants.length) {
       if (skus.some((s) => !s)) errors.variants = "Every variant needs a SKU.";
@@ -417,7 +436,6 @@ const Products = () => {
       name: form.name.trim(),
       description: form.description,
       richDescription: form.richDescription,
-      sku: form.sku.trim(),
       brand: form.brand.trim(),
       category: form.category,
       subcategory: form.subcategory,
@@ -429,9 +447,6 @@ const Products = () => {
       isNewArrival: form.isNewArrival,
       price: form.price || 0,
       discountPrice: form.discountPrice || 0,
-      costPrice: form.costPrice || 0,
-      tax: form.tax || 0,
-      currency: form.currency,
       stock: form.stock || 0,
       lowStockThreshold: form.lowStockThreshold || 10,
       minOrderQuantity: form.minOrderQuantity || 1,
@@ -441,6 +456,7 @@ const Products = () => {
       deliveryEstimate: form.deliveryEstimate,
       metaTitle: form.metaTitle,
       metaDescription: form.metaDescription,
+      schemaMarkup: form.schemaMarkup,
     };
     for (const [key, value] of Object.entries(scalars)) fd.append(key, String(value));
 
@@ -461,6 +477,10 @@ const Products = () => {
     fd.append("variants", JSON.stringify(variants));
     fd.append("imageUrls", JSON.stringify(existingImages));
     for (const file of newFiles) fd.append("images", file);
+    if (thumbKey) {
+      const newIndex = newFiles.indexOf(thumbKey);
+      fd.append("thumbnailRef", newIndex >= 0 ? `new:${newIndex}` : thumbKey);
+    }
 
     try {
       if (editing) {
@@ -566,7 +586,7 @@ const Products = () => {
       return ka.length === kb.length && ka.every((k) => a[k] === b[k]);
     };
 
-    const base = String(form.sku || form.name || "SKU").trim().toUpperCase().replace(/\s+/g, "-");
+    const base = String(form.name || "SKU").trim().toUpperCase().replace(/\s+/g, "-");
 
     const next = combos.map((options) => {
       const existing = variants.find((v) => sameOptions(v.options || {}, options));
@@ -593,6 +613,31 @@ const Products = () => {
 
   const updateVariant = (index, key, value) => {
     setVariants((list) => list.map((v, i) => (i === index ? { ...v, [key]: value } : v)));
+  };
+
+  /* ---------------------------------------------------------- image helpers */
+
+  const previewUrls = useMemo(() => newFiles.map((f) => URL.createObjectURL(f)), [newFiles]);
+  useEffect(() => () => previewUrls.forEach((u) => URL.revokeObjectURL(u)), [previewUrls]);
+
+  const galleryItems = useMemo(
+    () => [
+      ...existingImages.map((url) => ({ id: url, key: url, src: url })),
+      ...newFiles.map((file, i) => ({ id: `new-${i}`, key: file, src: previewUrls[i] })),
+    ],
+    [existingImages, newFiles, previewUrls]
+  );
+  const activeThumbKey = galleryItems.some((g) => g.key === thumbKey)
+    ? thumbKey
+    : galleryItems[0]?.key ?? null;
+  const thumbnailSrc = galleryItems.find((g) => g.key === activeThumbKey)?.src || "";
+
+  const removeGalleryItem = (item) => {
+    if (typeof item.key === "string") {
+      setExistingImages((list) => list.filter((url) => url !== item.key));
+    } else {
+      setNewFiles((list) => list.filter((f) => f !== item.key));
+    }
   };
 
   const activeFilterCount = useMemo(
@@ -644,14 +689,36 @@ const Products = () => {
             ["Active", stats.active, "text-emerald-600"],
             ["Drafts", stats.drafts, "text-slate-500"],
             ["Out of stock", stats.outOfStock, "text-amber-600"],
-            ["Low stock", stats.lowStock, "text-red-600"],
+            ["Low stock", stats.lowStock, "text-red-600", "low"],
             ["In trash", stats.deleted, "text-slate-400"],
-          ].map(([label, value, tone]) => (
-            <div key={label} className="card p-3.5">
-              <p className="text-[11px] text-slate-500 truncate">{label}</p>
-              <p className={`text-lg font-semibold tabular-nums mt-0.5 ${tone}`}>{value}</p>
-            </div>
-          ))}
+          ].map(([label, value, tone, stockFilter]) => {
+            const active = stockFilter && filters.stock === stockFilter;
+            const body = (
+              <>
+                <p className="text-[11px] text-slate-500 truncate">{label}</p>
+                <p className={`text-lg font-semibold tabular-nums mt-0.5 ${tone}`}>{value}</p>
+              </>
+            );
+            return stockFilter ? (
+              <button
+                key={label}
+                type="button"
+                onClick={() =>
+                  setFilters((f) => ({ ...f, stock: f.stock === stockFilter ? "all" : stockFilter }))
+                }
+                className={`card p-3.5 text-left transition-colors hover:border-red-300 ${
+                  active ? "border-red-400 bg-red-50/40" : ""
+                }`}
+                title={active ? "Show all products" : "Show only low stock products"}
+              >
+                {body}
+              </button>
+            ) : (
+              <div key={label} className="card p-3.5">
+                {body}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -894,6 +961,8 @@ const Products = () => {
                             <img
                               src={p.images[0]}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
                             />
                           ) : (
@@ -908,10 +977,11 @@ const Products = () => {
                                 <span className="ml-2 text-[10px] text-slate-400">(trashed)</span>
                               )}
                             </p>
-                            <p className="text-[11px] text-slate-400 font-mono truncate">
-                              {p.sku || "no SKU"}
-                              {p.variants?.length > 0 && ` · ${p.variants.length} variants`}
-                            </p>
+                            {p.variants?.length > 0 && (
+                              <p className="text-[11px] text-slate-400 truncate">
+                                {p.variants.length} variants
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -944,6 +1014,26 @@ const Products = () => {
                         >
                           {p.stock}
                         </span>
+                        {p.isLowStock && !p.isOutOfStock && (
+                          <button
+                            type="button"
+                            onClick={() => setFilters((f) => ({ ...f, stock: "low" }))}
+                            className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded transition-colors"
+                            title="Show all low stock products"
+                          >
+                            Low stock
+                          </button>
+                        )}
+                        {p.isOutOfStock && (
+                          <button
+                            type="button"
+                            onClick={() => setFilters((f) => ({ ...f, stock: "out" }))}
+                            className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-red-700 bg-red-100 hover:bg-red-200 px-1.5 py-0.5 rounded transition-colors"
+                            title="Show all out of stock products"
+                          >
+                            Out
+                          </button>
+                        )}
                       </td>
                       <td className="td">
                         <StatusBadge status={p.status} />
@@ -1082,15 +1172,6 @@ const Products = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">SKU</label>
-                    <input
-                      className="input font-mono"
-                      value={form.sku}
-                      onChange={(e) => setField("sku", e.target.value)}
-                      placeholder="SW-12096"
-                    />
-                  </div>
-                  <div>
                     <label className="label">Brand</label>
                     <input
                       className="input"
@@ -1227,41 +1308,8 @@ const Products = () => {
                   )}
                 </div>
                 <div>
-                  <label className="label">Cost price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="input"
-                    value={form.costPrice}
-                    onChange={(e) => setField("costPrice", e.target.value)}
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">Internal only — never shown to customers.</p>
-                </div>
-                <div>
-                  <label className="label">Tax (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="input"
-                    value={form.tax}
-                    onChange={(e) => setField("tax", e.target.value)}
-                  />
-                </div>
-                <div>
                   <label className="label">Currency</label>
-                  <select
-                    className="input"
-                    value={form.currency}
-                    onChange={(e) => setField("currency", e.target.value)}
-                  >
-                    {["USD", "EUR", "GBP", "INR", "AUD", "CAD"].map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <input className="input bg-slate-50" value="INR (₹)" disabled readOnly />
                 </div>
               </div>
             )}
@@ -1383,44 +1431,63 @@ const Products = () => {
                   />
                 </div>
 
+                {/* Thumbnail — the main image shown on cards and at the top of the product page */}
                 <div className="pt-2">
-                  <label className="label">Images</label>
-                  <div className="flex flex-wrap gap-3">
-                    {existingImages.map((url, i) => (
-                      <div key={url} className="relative group">
-                        <img
-                          src={url}
-                          alt=""
-                          className="w-20 h-20 rounded-lg object-cover border border-slate-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setExistingImages((list) => list.filter((_, x) => x !== i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label="Remove image"
-                        >
-                          <FiX size={11} />
-                        </button>
-                      </div>
-                    ))}
+                  <label className="label">Thumbnail (main image)</label>
+                  {thumbnailSrc ? (
+                    <img
+                      src={thumbnailSrc}
+                      alt="Thumbnail"
+                      className="w-32 h-32 rounded-xl object-cover border-2 border-indigo-400"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-xl border-2 border-dashed border-slate-200 text-slate-300 flex items-center justify-center">
+                      <BsBoxSeam size={24} />
+                    </div>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-1.5">
+                    Pick any image in the gallery below with the star to make it the thumbnail.
+                  </p>
+                </div>
 
-                    {newFiles.map((file, i) => (
-                      <div key={`${file.name}-${i}`} className="relative group">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt=""
-                          className="w-20 h-20 rounded-lg object-cover border border-indigo-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setNewFiles((list) => list.filter((_, x) => x !== i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label="Remove image"
-                        >
-                          <FiX size={11} />
-                        </button>
-                      </div>
-                    ))}
+                <div className="pt-2">
+                  <label className="label">Gallery images</label>
+                  <div className="flex flex-wrap gap-3">
+                    {galleryItems.map((item) => {
+                      const isThumb = item.key === activeThumbKey;
+                      return (
+                        <div key={item.id} className="relative group">
+                          <img
+                            src={item.src}
+                            alt=""
+                            className={`w-20 h-20 rounded-lg object-cover border-2 ${
+                              isThumb ? "border-indigo-500" : "border-slate-200"
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setThumbKey(item.key)}
+                            className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-opacity ${
+                              isThumb
+                                ? "bg-indigo-600 text-white"
+                                : "bg-white text-slate-500 border border-slate-200 opacity-0 group-hover:opacity-100"
+                            }`}
+                            aria-label={isThumb ? "Thumbnail" : "Set as thumbnail"}
+                            title={isThumb ? "Thumbnail" : "Set as thumbnail"}
+                          >
+                            <FiStar size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryItem(item)}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Remove image"
+                          >
+                            <FiX size={11} />
+                          </button>
+                        </div>
+                      );
+                    })}
 
                     <button
                       type="button"
@@ -1448,7 +1515,7 @@ const Products = () => {
                     }}
                   />
                   <p className="text-[11px] text-slate-400 mt-2">
-                    Up to 10 images, 8MB each. The first image is used as the thumbnail.
+                    Up to 10 images, 8MB each.
                   </p>
                 </div>
               </>
@@ -1618,6 +1685,26 @@ const Products = () => {
                     onChange={(e) => setField("seoKeywords", e.target.value)}
                     placeholder="shipping boxes, corrugated cartons, bulk packaging"
                   />
+                </div>
+                <div>
+                  <label className="label">Schema markup (JSON-LD)</label>
+                  <textarea
+                    className={`input min-h-[160px] resize-y font-mono text-[12px] ${
+                      formErrors.schemaMarkup ? "input-error" : ""
+                    }`}
+                    value={form.schemaMarkup}
+                    onChange={(e) => setField("schemaMarkup", e.target.value)}
+                    spellCheck={false}
+                    placeholder={'{\n  "@context": "https://schema.org",\n  "@type": "Product",\n  "name": "..."\n}'}
+                  />
+                  {formErrors.schemaMarkup ? (
+                    <p className="text-[11px] text-red-600 mt-1">{formErrors.schemaMarkup}</p>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Paste JSON-LD, with or without the &lt;script type="application/ld+json"&gt;
+                      wrapper. It is added to this product's page for search engines.
+                    </p>
+                  )}
                 </div>
               </>
             )}

@@ -28,14 +28,14 @@ export const sendContactMessage = async (req, res) => {
   try {
     const { name, email, phone, subject, message = "", productName = "" } = req.body || {};
 
-    if (!name || !email || !phone || !subject) {
-      return res.status(400).json({ message: "Name, email, phone and subject are required." });
+    if (!name || !email || !phone) {
+      return res.status(400).json({ message: "Name, email and phone are required." });
     }
     if (!validator.isEmail(String(email))) {
       return res.status(400).json({ message: "Enter a valid email address." });
     }
 
-    const resolvedSubject = productName ? `Product enquiry: ${productName}` : String(subject).trim();
+    const resolvedSubject = productName ? `Product enquiry: ${productName}` : String(subject || "").trim() || "Website enquiry";
 
     const enquiry = await Enquiry.create({
       name: String(name).trim(),

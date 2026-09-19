@@ -40,6 +40,17 @@ const ProductDetail = () => {
     };
   }, [id]);
 
+  // Inject the admin-supplied JSON-LD into <head> while this product is on screen.
+  useEffect(() => {
+    const markup = product?.schemaMarkup;
+    if (!markup) return undefined;
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = markup;
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [product]);
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
@@ -89,7 +100,7 @@ const ProductDetail = () => {
         <div>
           <div className="aspect-[4/3] rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
             {images[activeImage] && (
-              <img src={images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
+              <img src={images[activeImage]} alt={product.name} decoding="async" className="w-full h-full object-cover" />
             )}
           </div>
           {images.length > 1 && (
@@ -103,7 +114,7 @@ const ProductDetail = () => {
                     activeImage === i ? "border-brand-500" : "border-transparent"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

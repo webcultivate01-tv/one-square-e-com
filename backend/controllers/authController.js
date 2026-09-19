@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import validator from "validator";
 import User, { STAFF_ROLES } from "../model/userModel.js";
@@ -5,7 +6,7 @@ import { generateToken, cookieOptions } from "../config/token.js";
 import { toPublicUser } from "../utils/dto.js";
 import { getRequestContext } from "../utils/requestContext.js";
 import { logActivity } from "../utils/activity.js";
-import { sendOtpMail, sendWelcomeMail } from "../config/nodemailer.js";
+import { sendPasswordResetMail, sendWelcomeMail } from "../config/nodemailer.js";
 import { isStrongPassword, PASSWORD_HINT, BCRYPT_ROUNDS } from "../utils/password.js";
 
 // POST /api/auth/signup
@@ -127,39 +128,93 @@ export const logout = async (req, res) => {
   }
 };
 
-// POST /api/auth/sendotp  — always reports success so emails cannot be enumerated.
+// ---- Forgot-password flow (admin / sales / telecaller only) ----------------------------------
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_RESEND_MS = 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+
+/** Wrong-code counter per email. Single-process, like the rate limiter; entries only exist for real staff. */
+const otpAttempts = new Map();
+
+const findStaffByEmail = (email) =>
+  User.findOne({ where: { email: String(email).toLowerCase().trim() } });
+
+// POST /api/auth/sendotp — emails a 6-digit reset code to an existing, active staff account.
 export const sendOtp = async (req, res) => {
   try {
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ message: "Email is required." });
+    if (!validator.isEmail(String(email))) {
+      return res.status(400).json({ message: "Enter a valid email address." });
+    }
 
-    const user = await User.findOne({ where: { email: String(email).toLowerCase().trim() } });
-    if (user) {
-      const otp = String(Math.floor(100000 + Math.random() * 900000));
-      user.otp = await bcrypt.hash(otp, BCRYPT_ROUNDS);
-      user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-      await user.save();
-      sendOtpMail(user.email, otp).catch((e) => console.warn(e.message));
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`[auth] OTP for ${user.email}: ${otp}`);
+    const user = await findStaffByEmail(email);
+    if (!user || !STAFF_ROLES.includes(user.role)) {
+      return res.status(404).json({ message: "No admin account found with this email." });
+    }
+    if (!user.isActive) {
+      return res
+        .status(403)
+        .json({ message: "This account has been deactivated. Contact an Admin." });
+    }
+
+    // Resend cooldown: the current code was issued at (otpExpiry - TTL).
+    if (user.otp && user.otpExpiry) {
+      const issuedAt = new Date(user.otpExpiry).getTime() - OTP_TTL_MS;
+      const wait = Math.ceil((issuedAt + OTP_RESEND_MS - Date.now()) / 1000);
+      if (wait > 0) {
+        return res.status(429).json({ message: `A code was just sent. Try again in ${wait}s.` });
       }
     }
 
-    return res
-      .status(200)
-      .json({ message: "If that email exists, a verification code has been sent." });
+    const otp = String(crypto.randomInt(100000, 1000000));
+    user.otp = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+    user.otpExpiry = new Date(Date.now() + OTP_TTL_MS);
+    await user.save();
+    otpAttempts.delete(user.email);
+
+    const mail = await sendPasswordResetMail(user.email, user.name, otp);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[auth] reset code for ${user.email}: ${otp}`);
+    }
+    if (!mail.sent && process.env.NODE_ENV === "production") {
+      user.otp = null;
+      user.otpExpiry = null;
+      await user.save();
+      return res
+        .status(503)
+        .json({ message: "Could not send the email right now. Please try again shortly." });
+    }
+
+    return res.status(200).json({ message: "A verification code has been sent to your email." });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
+/** Returns the user when the code is valid; counts failures and burns the code after too many. */
 const verifyOtpFor = async (email, otp) => {
-  const user = await User.findOne({ where: { email: String(email).toLowerCase().trim() } });
-  if (!user || !user.otp || !user.otpExpiry) return null;
+  const user = await findStaffByEmail(email);
+  if (!user || !STAFF_ROLES.includes(user.role) || !user.isActive) return null;
+  if (!user.otp || !user.otpExpiry) return null;
   if (new Date(user.otpExpiry).getTime() < Date.now()) return null;
-  const ok = await bcrypt.compare(String(otp), user.otp);
-  return ok ? user : null;
+
+  const ok = await bcrypt.compare(String(otp).trim(), user.otp);
+  if (ok) return user;
+
+  const failed = (otpAttempts.get(user.email) || 0) + 1;
+  if (failed >= OTP_MAX_ATTEMPTS) {
+    otpAttempts.delete(user.email);
+    user.otp = null;
+    user.otpExpiry = null;
+    await user.save();
+  } else {
+    otpAttempts.set(user.email, failed);
+  }
+  return null;
 };
+
+const INVALID_CODE = "Invalid or expired code. Request a new one if it keeps failing.";
 
 // POST /api/auth/verifyotp
 export const verifyOtp = async (req, res) => {
@@ -168,7 +223,7 @@ export const verifyOtp = async (req, res) => {
     if (!email || !otp) return res.status(400).json({ message: "Email and code are required." });
 
     const user = await verifyOtpFor(email, otp);
-    if (!user) return res.status(400).json({ message: "Invalid or expired code." });
+    if (!user) return res.status(400).json({ message: INVALID_CODE });
 
     return res.status(200).json({ message: "Code verified." });
   } catch (error) {
@@ -179,16 +234,19 @@ export const verifyOtp = async (req, res) => {
 // POST /api/auth/resetpassword
 export const resetPassword = async (req, res) => {
   try {
-    const { email, otp, password } = req.body || {};
+    const { email, otp, password, confirmPassword } = req.body || {};
     if (!email || !otp || !password) {
       return res.status(400).json({ message: "Email, code and new password are required." });
+    }
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+      return res.status(400).json({ message: "The two passwords do not match." });
     }
     if (!isStrongPassword(password)) {
       return res.status(400).json({ message: PASSWORD_HINT });
     }
 
     const user = await verifyOtpFor(email, otp);
-    if (!user) return res.status(400).json({ message: "Invalid or expired code." });
+    if (!user) return res.status(400).json({ message: INVALID_CODE });
 
     user.password = await bcrypt.hash(String(password), BCRYPT_ROUNDS);
     user.otp = null;
@@ -197,6 +255,7 @@ export const resetPassword = async (req, res) => {
     user.mustChangePassword = false;
     user.tokensValidFrom = new Date(); // sign out everywhere
     await user.save();
+    otpAttempts.delete(user.email);
 
     logActivity({
       customer: user.id,

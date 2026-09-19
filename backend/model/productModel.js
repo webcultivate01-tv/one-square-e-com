@@ -27,7 +27,7 @@ Product.init(
     discountPrice: { type: DataTypes.FLOAT, defaultValue: 0 },
     costPrice: { type: DataTypes.FLOAT, defaultValue: 0 },
     tax: { type: DataTypes.FLOAT, defaultValue: 0 },
-    currency: { type: DataTypes.STRING, defaultValue: "USD" },
+    currency: { type: DataTypes.STRING, defaultValue: "INR" },
 
     // Inventory
     stock: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -51,6 +51,7 @@ Product.init(
     metaTitle: { type: DataTypes.STRING, defaultValue: "" },
     metaDescription: { type: DataTypes.STRING, defaultValue: "" },
     seoKeywords: { type: DataTypes.JSON, defaultValue: [] },
+    schemaMarkup: { type: DataTypes.TEXT, defaultValue: "" },
 
     // Visibility flags
     isFeatured: { type: DataTypes.BOOLEAN, defaultValue: false },

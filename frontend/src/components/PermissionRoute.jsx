@@ -7,7 +7,7 @@ import { can } from "../redux/userSlice.js";
  * Mirrors the server's hasPermission middleware so a sub-admin never sees a
  * screen that would 403 on every request it makes.
  */
-const PermissionRoute = ({ permission, children }) => {
+const PermissionRoute = ({ permission, homePath = "/admin", children }) => {
   const { userData } = useSelector((state) => state.user);
 
   if (can(userData, permission)) return children;
@@ -22,7 +22,7 @@ const PermissionRoute = ({ permission, children }) => {
         Your account does not have the <span className="font-medium text-slate-700">{permission}</span>{" "}
         permission. Ask an Admin to grant it from Employee Management.
       </p>
-      <Link to="/admin" className="btn-secondary mt-5">
+      <Link to={homePath} className="btn-secondary mt-5">
         Back to dashboard
       </Link>
     </div>

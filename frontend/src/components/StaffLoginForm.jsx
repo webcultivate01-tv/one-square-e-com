@@ -9,6 +9,7 @@ import { setUserData } from "../redux/userSlice.js";
 import { LOGO_URL } from "../utils/site.js";
 import PasswordField from "./PasswordField.jsx";
 import { FullPageLoader, Spinner } from "./ui.jsx";
+import ForgotPassword from "./ForgotPassword.jsx";
 
 /**
  * Shared shell behind /talecaller/login and /sales/login. A telecaller
@@ -26,11 +27,26 @@ const StaffLoginForm = ({ role, roleLabel, homePath, changePasswordPath }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   if (!authChecked) return <FullPageLoader label="Checking your session..." />;
 
   if (userData && userData.role === role) {
     return <Navigate to={location.state?.from || homePath} replace />;
+  }
+  if (forgot) {
+    return (
+      <ForgotPassword
+        roleLabel={roleLabel}
+        initialEmail={email}
+        onBack={(newEmail) => {
+          if (newEmail) setEmail(newEmail);
+          setPassword("");
+          setError("");
+          setForgot(false);
+        }}
+      />
+    );
   }
 
   const submit = async (e) => {
@@ -121,6 +137,16 @@ const StaffLoginForm = ({ role, roleLabel, homePath, changePasswordPath }) => {
               autoComplete="current-password"
               disabled={busy}
             />
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setForgot(true)}
+                className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                disabled={busy}
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary w-full !py-2.5" disabled={busy}>

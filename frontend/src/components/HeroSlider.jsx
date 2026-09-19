@@ -4,9 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FiArrowRight, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { HERO_SLIDES } from "../utils/site.js";
 
-const AUTOPLAY_MS = 5000;
-const IMAGE_TRANSITION_S = 0.6;
-const EASE = [0.16, 1, 0.3, 1];
+const AUTOPLAY_MS = 7000;
+const IMAGE_TRANSITION_S = 0.9;
+const EASE = [0.22, 1, 0.36, 1];
 
 const imageVariants = {
   enter: (direction) => ({ x: direction >= 0 ? "100%" : "-100%" }),
@@ -16,17 +16,17 @@ const imageVariants = {
 
 const textContainerVariants = {
   hidden: {},
-  visible: { transition: { delayChildren: IMAGE_TRANSITION_S, staggerChildren: 0.1 } },
+  visible: { transition: { delayChildren: IMAGE_TRANSITION_S * 0.8, staggerChildren: 0.3 } },
 };
 
 const textItemVariants = (fromRight) => ({
-  hidden: { opacity: 0, x: fromRight ? 40 : -40 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: EASE } },
+  hidden: { opacity: 0, x: fromRight ? 24 : -24 },
+  visible: { opacity: 1, x: 0, transition: { duration: 1.1, ease: EASE } },
 });
 
 const bulletListVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.06 } },
+  visible: { transition: { staggerChildren: 0.2 } },
 };
 
 const HeroSlider = () => {
