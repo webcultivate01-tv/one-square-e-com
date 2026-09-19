@@ -685,38 +685,42 @@ const Products = () => {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            ["Total", stats.total, "text-slate-900"],
-            ["Active", stats.active, "text-emerald-600"],
-            ["Drafts", stats.drafts, "text-slate-500"],
-            ["Out of stock", stats.outOfStock, "text-amber-600"],
-            ["Low stock", stats.lowStock, "text-red-600", "low"],
-            ["In trash", stats.deleted, "text-slate-400"],
-          ].map(([label, value, tone, stockFilter]) => {
-            const active = stockFilter && filters.stock === stockFilter;
+            ["Total", stats.total, "text-slate-900", null, null, "Show all products"],
+            ["Active", stats.active, "text-emerald-600", "status", "active", "Show only active products"],
+            ["Drafts", stats.drafts, "text-slate-500", "status", "draft", "Show only draft products"],
+            ["Out of stock", stats.outOfStock, "text-amber-600", "stock", "out", "Show only out of stock products"],
+            ["Low stock", stats.lowStock, "text-red-600", "stock", "low", "Show only low stock products"],
+            ["In trash", stats.deleted, "text-slate-400", "includeDeleted", true, "Show trashed products"],
+          ].map(([label, value, tone, filterKey, filterValue, hint]) => {
+            const active = filterKey ? filters[filterKey] === filterValue : false;
             const body = (
               <>
                 <p className="text-[11px] text-slate-500 truncate">{label}</p>
                 <p className={`text-lg font-semibold tabular-nums mt-0.5 ${tone}`}>{value}</p>
               </>
             );
-            return stockFilter ? (
+            const handleClick = () => {
+              if (!filterKey) {
+                setFilters((f) => ({ ...f, status: "all", stock: "all", includeDeleted: false }));
+                return;
+              }
+              setFilters((f) => ({
+                ...f,
+                [filterKey]: f[filterKey] === filterValue ? (filterKey === "includeDeleted" ? false : "all") : filterValue,
+              }));
+            };
+            return (
               <button
                 key={label}
                 type="button"
-                onClick={() =>
-                  setFilters((f) => ({ ...f, stock: f.stock === stockFilter ? "all" : stockFilter }))
-                }
+                onClick={handleClick}
                 className={`card p-3.5 text-left transition-colors hover:border-red-300 ${
                   active ? "border-red-400 bg-red-50/40" : ""
                 }`}
-                title={active ? "Show all products" : "Show only low stock products"}
+                title={active ? "Show all products" : hint}
               >
                 {body}
               </button>
-            ) : (
-              <div key={label} className="card p-3.5">
-                {body}
-              </div>
             );
           })}
         </div>

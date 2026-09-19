@@ -8,6 +8,7 @@ import { serverUrl } from "../App.jsx";
 import { EmptyState, formatMoney, SectionLoader } from "../components/ui.jsx";
 import EnquiryModal from "../components/EnquiryModal.jsx";
 import { selectIsWishlisted, toggleWishlist } from "../redux/wishlistSlice.js";
+import Seo from "../components/Seo.jsx";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -62,6 +63,7 @@ const ProductDetail = () => {
   if (notFound || !product) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        <Seo title="Product Not Found" noindex />
         <EmptyState title="Product not found" hint="This item may have been removed or is no longer available." />
         <div className="text-center mt-4">
           <Link to="/products" className="btn-brand-outline inline-flex">
@@ -82,6 +84,10 @@ const ProductDetail = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <Seo
+        title={`Buy ${product.name}${product.category?.name ? ` - ${product.category.name}` : ""}`}
+        description={(product.description || `Buy ${product.name} online from One Square Associates.`).slice(0, 155)}
+      />
       <div className="flex items-center gap-1.5 text-[12.5px] text-slate-400 mb-6">
         <Link to="/products" className="hover:text-slate-600">Shop</Link>
         <FiChevronRight size={12} />
@@ -98,9 +104,9 @@ const ProductDetail = () => {
 
       <div className="grid lg:grid-cols-2 gap-10">
         <div>
-          <div className="aspect-[4/3] rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+          <div className="group aspect-[4/3] rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
             {images[activeImage] && (
-              <img src={images[activeImage]} alt={product.name} decoding="async" className="w-full h-full object-cover" />
+              <img src={images[activeImage]} alt={product.name} decoding="async" className="w-full h-full object-cover group-hover:scale-[1.08] transition-transform duration-500 ease-out" />
             )}
           </div>
           {images.length > 1 && (

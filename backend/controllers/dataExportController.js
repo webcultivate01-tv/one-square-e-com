@@ -217,7 +217,7 @@ const csvEscape = (v) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-const writeCsv = (res, ds, rows, filename) => {
+export const writeCsv = (res, ds, rows, filename) => {
   const lines = [ds.columns.map((c) => csvEscape(c.header)).join(",")];
   for (const r of rows) {
     lines.push(ds.columns.map((c) => csvEscape(r[c.key])).join(","));
@@ -228,7 +228,7 @@ const writeCsv = (res, ds, rows, filename) => {
   return res.status(200).send(`﻿${lines.join("\r\n")}`);
 };
 
-const writeXlsx = async (res, ds, rows, filename) => {
+export const writeXlsx = async (res, ds, rows, filename) => {
   const wb = new ExcelJS.Workbook();
   wb.creator = "GOBOXLY Admin";
   wb.created = new Date();
@@ -274,7 +274,7 @@ const writeXlsx = async (res, ds, rows, filename) => {
   return res.status(200).send(Buffer.from(buffer));
 };
 
-const writePdf = (res, ds, rows, filename) => {
+export const writePdf = (res, ds, rows, filename, subtitle = "") => {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}.pdf"`);
 
@@ -323,7 +323,7 @@ const writePdf = (res, ds, rows, filename) => {
     .fontSize(9)
     .font("Helvetica")
     .fillColor("#64748B")
-    .text(`Generated ${new Date().toLocaleString()} · ${rows.length} record(s)`, left, 56);
+    .text(`Generated ${new Date().toLocaleString()} · ${rows.length} record(s)${subtitle ? ` · ${subtitle}` : ""}`, left, 56);
 
   let y = drawHeaderBand(78);
   const bottom = doc.page.height - doc.page.margins.bottom - 24;

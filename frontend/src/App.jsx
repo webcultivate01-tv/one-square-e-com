@@ -3,6 +3,7 @@ import { FiAlertOctagon, FiGrid, FiMail, FiShoppingCart, FiTag, FiTool, FiUser }
 import { BsBoxSeam } from "react-icons/bs";
 import StaffShell from "./components/StaffShell.jsx";
 import useGetCurrentUser from "./hooks/useGetCurrentUser.js";
+import { RouteSeo } from "./components/Seo.jsx";
 import AdminRoute from "./components/AdminRoute.jsx";
 import PermissionRoute from "./components/PermissionRoute.jsx";
 import RoleRoute from "./components/RoleRoute.jsx";
@@ -13,6 +14,8 @@ import Products from "./pages/Admin/Products.jsx";
 import Categories from "./pages/Admin/Categories.jsx";
 import Orders from "./pages/Admin/Orders.jsx";
 import Enquiries from "./pages/Admin/Enquiries.jsx";
+import Customers from "./pages/Admin/Customers.jsx";
+import Reports from "./pages/Admin/Reports.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
 import ConfirmOrder from "./pages/ConfirmOrder.jsx";
 import Employees from "./pages/Admin/Employees.jsx";
@@ -121,6 +124,8 @@ const App = () => {
   useGetCurrentUser();
 
   return (
+    <>
+    <RouteSeo />
     <Routes>
       {/* ---------------------------------------------------------- storefront */}
       <Route element={<PublicLayout />}>
@@ -174,7 +179,14 @@ const App = () => {
         {orderDetailRoute()}
         {confirmOrderRoutes()}
         <Route path="payments" element={<ComingSoon title="Payments" />} />
-        <Route path="customers" element={<ComingSoon title="Customers" />} />
+        <Route
+          path="customers"
+          element={
+            <PermissionRoute permission="customers">
+              <Customers />
+            </PermissionRoute>
+          }
+        />
         <Route
           path="enquiries"
           element={
@@ -183,7 +195,14 @@ const App = () => {
             </PermissionRoute>
           }
         />
-        <Route path="export" element={<ComingSoon title="Data Export" />} />
+        <Route
+          path="export"
+          element={
+            <PermissionRoute permission="reports">
+              <Reports />
+            </PermissionRoute>
+          }
+        />
         <Route
           path="employees"
           element={
@@ -249,6 +268,7 @@ const App = () => {
         <Route path="*" element={<Navigate to="/sales" replace />} />
       </Route>
     </Routes>
+    </>
   );
 };
 

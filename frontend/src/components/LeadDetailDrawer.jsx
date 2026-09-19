@@ -3,7 +3,17 @@ import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { FiArrowLeft, FiCheckCircle, FiFileText, FiMail, FiMapPin, FiPhone, FiSend } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiCheckCircle,
+  FiFileText,
+  FiMail,
+  FiMapPin,
+  FiPhone,
+  FiSend,
+  FiSlash,
+  FiThumbsDown,
+} from "react-icons/fi";
 import { serverUrl } from "../App.jsx";
 import { can } from "../redux/userSlice.js";
 import Invoice from "./Invoice.jsx";
@@ -22,6 +32,9 @@ const NOTE_STYLE = {
   system: "bg-emerald-50 text-emerald-700",
 };
 const NOTE_LABEL = { call: "Call", follow_up: "Follow-up", note: "Note", system: "System" };
+
+// Request statuses that already ended the conversation — no Spam / Not interested shortcuts.
+const CLOSED = ["converted", "cancelled", "spam", "not_interested"];
 
 /**
  * Full-size view of one lead (a Contact enquiry or a Buy Now request).
@@ -106,7 +119,13 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange, page =
       setNotes((prev) => [data.note, ...prev]);
       setText("");
       setFollowUpAt("");
-      if (data.status) onChange?.({ ...lead, status: data.status });
+      if (data.status || data.nextFollowUpAt) {
+        onChange?.({
+          ...lead,
+          ...(data.status && { status: data.status }),
+          ...(data.nextFollowUpAt && { nextFollowUpAt: data.nextFollowUpAt }),
+        });
+      }
       toast.success("Note added.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not save the note.");
@@ -126,6 +145,10 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange, page =
     } finally {
       setStatusBusy(false);
     }
+  };
+
+  const markAs = (status, question) => {
+    if (window.confirm(question)) changeStatus(status);
   };
 
   const openBill = async () => {
@@ -171,7 +194,27 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange, page =
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {kind === "order_request" && !CLOSED.includes(lead.status) && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-secondary !py-1.5 !text-[12px]"
+                    disabled={statusBusy}
+                    onClick={() => markAs("spam", "Mark this customer as spam?")}
+                  >
+                    <FiSlash size={13} /> Spam
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary !py-1.5 !text-[12px]"
+                    disabled={statusBusy}
+                    onClick={() => markAs("not_interested", "Mark this customer as not interested?")}
+                  >
+                    <FiThumbsDown size={13} /> Not interested
+                  </button>
+                </>
+              )}
               <StatusBadge status={lead.status} />
               <select
                 className="input !w-auto !py-1.5 !text-[12px]"

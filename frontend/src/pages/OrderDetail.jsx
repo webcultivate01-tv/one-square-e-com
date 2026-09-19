@@ -4,13 +4,7 @@ import axios from "axios";
 import { serverUrl } from "../App.jsx";
 import { ErrorState, SectionLoader } from "../components/ui.jsx";
 import LeadDetailDrawer from "../components/LeadDetailDrawer.jsx";
-
-const STATUS_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "contacted", label: "Contacted" },
-  { value: "converted", label: "Converted" },
-  { value: "cancelled", label: "Cancelled" },
-];
+import { allowedStatusOptions } from "../utils/orderStatus.js";
 
 /** Full page for one Buy Now request — shared by the admin, sales and telecaller portals. */
 const OrderDetail = () => {
@@ -41,7 +35,7 @@ const OrderDetail = () => {
       page
       kind="order_request"
       lead={lead}
-      statusOptions={STATUS_OPTIONS}
+      statusOptions={allowedStatusOptions(lead.status)}
       onClose={() => navigate(listPath)}
       onChange={(next) => setLead((prev) => ({ ...prev, ...next }))}
     />

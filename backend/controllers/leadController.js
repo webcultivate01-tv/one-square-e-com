@@ -112,11 +112,19 @@ export const addLeadNote = async (req, res) => {
     if (lead.status === fresh) {
       lead.status = working;
       lead.handledBy = req.adminUser.id;
-      await lead.save();
       status = lead.status;
     }
+    // Buy Now requests remember the newest scheduled follow-up for the Follow-up tab.
+    const tracksFollowUp = req.params.type === "order_request" && followUpAt;
+    if (tracksFollowUp) lead.nextFollowUpAt = followUpAt;
+    if (status || tracksFollowUp) await lead.save();
 
-    return res.status(201).json({ note: toNoteDTO(note), status, message: "Note added." });
+    return res.status(201).json({
+      note: toNoteDTO(note),
+      status,
+      nextFollowUpAt: tracksFollowUp ? followUpAt : undefined,
+      message: "Note added.",
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

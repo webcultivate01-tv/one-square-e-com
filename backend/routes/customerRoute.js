@@ -3,6 +3,7 @@ import isAuth from "../middleware/isAuth.js";
 import isAdmin from "../middleware/isAdmin.js";
 import hasPermission from "../middleware/hasPermission.js";
 import { mailLimit, readLimit, writeLimit } from "../middleware/rateLimit.js";
+import { listCustomerDirectory } from "../controllers/customerDirectoryController.js";
 import {
   addCustomerNote,
   bulkCustomerAction,
@@ -31,6 +32,7 @@ router.use(isAuth, isAdmin, hasPermission("customers"));
 
 // Static segments BEFORE "/:id".
 router.get("/analytics/summary", readLimit, customerAnalytics);
+router.get("/directory", readLimit, listCustomerDirectory);
 router.get("/export.csv", readLimit, exportCustomersCsv);
 router.post("/bulk-action", writeLimit, bulkCustomerAction);
 router.post("/bulk-email", mailLimit, bulkEmailCustomers);

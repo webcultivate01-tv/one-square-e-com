@@ -7,6 +7,7 @@ import ProductCard from "../components/ProductCard.jsx";
 import Reveal from "../components/Reveal.jsx";
 import { EmptyState, Pagination, SectionLoader } from "../components/ui.jsx";
 import useDebounced from "../hooks/useDebounced.js";
+import Seo from "../components/Seo.jsx";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -81,8 +82,14 @@ const Products = () => {
     setParams(next, { replace: true });
   };
 
+  const activeCategory = categories.find((c) => c._id === category);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <Seo
+        title={activeCategory ? `Buy ${activeCategory.name} Online` : "Shop All Products"}
+        description={activeCategory ? `Shop ${activeCategory.name} - premium home décor and furniture from One Square Associates.` : undefined}
+      />
       <div className="mb-8">
         <p className="eyebrow">Catalog</p>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">Shop furniture</h1>

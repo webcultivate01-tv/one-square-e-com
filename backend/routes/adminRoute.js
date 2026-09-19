@@ -16,6 +16,7 @@ import {
   updateOrderStatus,
 } from "../controllers/adminController.js";
 import { exportDataset, listDatasets } from "../controllers/dataExportController.js";
+import { listReports, runReport } from "../controllers/reportController.js";
 
 const router = express.Router();
 
@@ -41,5 +42,9 @@ router.get("/payments/:id", readLimit, hasPermission("payments"), getPaymentById
 // Data export
 router.get("/export", readLimit, hasPermission("reports"), listDatasets);
 router.get("/export/:dataset", readLimit, hasPermission("reports"), exportDataset);
+
+// Reports (filterable, previewable, downloadable)
+router.get("/reports", readLimit, hasPermission("reports"), listReports);
+router.get("/reports/:type", readLimit, hasPermission("reports"), runReport);
 
 export default router;

@@ -78,7 +78,9 @@ const BADGE = {
   pending: ["bg-amber-50 text-amber-700", "bg-amber-500", "Pending"],
   // buy-now request status
   contacted: ["bg-blue-50 text-blue-700", "bg-blue-500", "Contacted"],
-  converted: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Converted"],
+  converted: ["bg-emerald-50 text-emerald-700", "bg-emerald-600", "Confirmed"],
+  completed: ["bg-teal-50 text-teal-700", "bg-teal-600", "Completed"],
+  not_interested: ["bg-slate-100 text-slate-600", "bg-slate-400", "Not interested"],
   // enquiry status
   new: ["bg-amber-50 text-amber-700", "bg-amber-500", "New"],
   in_progress: ["bg-blue-50 text-blue-700", "bg-blue-500", "In Progress"],

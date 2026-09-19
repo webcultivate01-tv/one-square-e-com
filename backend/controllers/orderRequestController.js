@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import validator from "validator";
-import OrderRequest, { ORDER_REQUEST_STATUSES } from "../model/orderRequestModel.js";
+import OrderRequest, { ORDER_REQUEST_STATUSES, canMoveStatus } from "../model/orderRequestModel.js";
 import Product from "../model/productModel.js";
 import { sendMail } from "../config/nodemailer.js";
 import { isFilterActive, isValidId, likeTerm, parsePaging } from "../utils/helpers.js";
@@ -9,7 +9,23 @@ const inbox = () => process.env.CONTACT_EMAIL || process.env.EMAIL_USER;
 
 const PRODUCT_INCLUDE = { model: Product, as: "productDetails", attributes: ["id", "name", "images", "slug"] };
 
-const toOrderRequestDTO = (r) => {
+const OPEN = ["pending", "contacted"];
+
+/** Tabs on the Orders page. */
+const VIEWS = {
+  pending: { where: { status: { [Op.in]: OPEN } } },
+  follow_up: {
+    where: { status: { [Op.in]: OPEN }, nextFollowUpAt: { [Op.ne]: null } },
+    order: [["nextFollowUpAt", "ASC"]],
+  },
+  spam: { where: { status: "spam" } },
+  not_interested: { where: { status: "not_interested" } },
+  confirmed: { where: { status: "converted" } },
+  completed: { where: { status: "completed" } },
+  cancelled: { where: { status: "cancelled" } },
+};
+
+const toOrderRequestDTO =(r) => {
   if (!r) return null;
   const o = typeof r.toJSON === "function" ? r.toJSON() : r;
   return {
@@ -25,6 +41,7 @@ const toOrderRequestDTO = (r) => {
     address: o.address,
     message: o.message || "",
     status: o.status,
+    nextFollowUpAt: o.nextFollowUpAt || null,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
   };
@@ -107,7 +124,10 @@ export const getAllOrderRequests = async (req, res) => {
     const { page, limit, skip } = parsePaging(req.query);
     const dbWhere = {};
 
-    if (isFilterActive(req.query.status)) dbWhere.status = req.query.status;
+    // `view` powers the Orders tabs; a plain `status` filter still works.
+    const view = VIEWS[req.query.view];
+    if (view) Object.assign(dbWhere, view.where);
+    else if (isFilterActive(req.query.status)) dbWhere.status = req.query.status;
 
     if (req.query.search) {
       const term = likeTerm(req.query.search);
@@ -122,7 +142,7 @@ export const getAllOrderRequests = async (req, res) => {
     const { rows, count } = await OrderRequest.findAndCountAll({
       where: dbWhere,
       include: [PRODUCT_INCLUDE],
-      order: [["createdAt", "DESC"]],
+      order: view?.order || [["createdAt", "DESC"]],
       offset: skip,
       limit,
     });
@@ -166,6 +186,10 @@ export const updateOrderRequestStatus = async (req, res) => {
 
     const request = await OrderRequest.findByPk(id);
     if (!request) return res.status(404).json({ message: "Request not found." });
+
+    if (!canMoveStatus(request.status, status)) {
+      return res.status(400).json({ message: `Can't move a "${request.status}" request back to "${status}".` });
+    }
 
     request.status = status;
     request.handledBy = req.adminUser?.id || null;
