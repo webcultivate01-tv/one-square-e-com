@@ -373,14 +373,18 @@ export const Drawer = ({ open, onClose, title, subtitle, children, width = "max-
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 flex justify-end lg:justify-center lg:items-center lg:p-6"
+      role="dialog"
+      aria-modal="true"
+    >
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative bg-white w-full ${width} h-full flex flex-col shadow-2xl animate-slideInRight`}
+        className={`relative bg-white w-full ${width} h-full lg:h-auto lg:max-h-[90vh] lg:rounded-xl flex flex-col shadow-2xl animate-slideInRight lg:animate-popIn`}
       >
         <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4 shrink-0">
           <div className="min-w-0">

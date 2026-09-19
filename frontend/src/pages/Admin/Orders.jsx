@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiRefreshCw, FiSearch, FiShoppingCart, FiX } from "react-icons/fi";
 import axios from "axios";
@@ -12,7 +13,6 @@ import {
   StatusBadge,
   formatDate,
 } from "../../components/ui.jsx";
-import LeadDetailDrawer from "../../components/LeadDetailDrawer.jsx";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All statuses" },
@@ -27,7 +27,8 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
-  const [openId, setOpenId] = useState(null);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 350);
@@ -149,7 +150,7 @@ const Orders = () => {
                   {requests.map((r) => (
                     <tr
                       key={r._id}
-                      onClick={() => setOpenId(r._id)}
+                      onClick={() => navigate(`/${pathname.split("/")[1]}/orders/${r._id}`, { state: { lead: r } })}
                       className="hover:bg-slate-50/60 transition-colors align-top cursor-pointer"
                     >
                       <td className="td">
@@ -222,14 +223,6 @@ const Orders = () => {
           </>
         )}
       </div>
-
-      <LeadDetailDrawer
-        kind="order_request"
-        lead={requests.find((x) => x._id === openId) || null}
-        statusOptions={STATUS_OPTIONS.filter((o) => o.value)}
-        onClose={() => setOpenId(null)}
-        onChange={(next) => setRequests((prev) => prev.map((x) => (x._id === next._id ? { ...x, ...next } : x)))}
-      />
     </div>
   );
 };

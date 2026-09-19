@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { FiCheck, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { serverUrl } from "../App.jsx";
 import useDebounced from "../hooks/useDebounced.js";
-import Invoice from "./Invoice.jsx";
-import { Modal, Spinner, formatMoney } from "./ui.jsx";
+import Invoice from "../components/Invoice.jsx";
+import { SectionLoader, Spinner, formatMoney } from "../components/ui.jsx";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -20,10 +21,37 @@ const STEPS = ["Order", "Payment", "Bill"];
 const emptyItem = () => ({ key: Math.random().toString(36).slice(2), product: null, name: "", quantity: 1, price: "" });
 
 /**
- * Three-step flow once the customer says "yes, I want to buy":
+ * Full page (inside the same admin / sales / telecaller shell) for the flow once the
+ * customer says "yes, I want to buy":
  * 1. confirm the products and prices, 2. choose advance / full payment, 3. bill.
+ * The lead arrives through router state from the lead detail view.
  */
-const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
+const ConfirmOrder = () => {
+  const { kind = "order_request", id } = useParams();
+  const { state, pathname } = useLocation();
+  const [fetched, setFetched] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const lead = state?.lead || fetched;
+  const base = "/" + pathname.split("/")[1];
+  const listPath = `${base}/${kind === "enquiry" ? "enquiries" : "orders"}`;
+
+  // Order requests live at /orders/:id/confirm, so a refresh or shared link can reload the lead.
+  useEffect(() => {
+    if (state?.lead || kind !== "order_request" || !id) return;
+    axios
+      .get(`${serverUrl}/api/order-request/${id}`, { withCredentials: true })
+      .then(({ data }) => setFetched(data.request))
+      .catch(() => setFailed(true));
+  }, [id, kind, state?.lead]);
+
+  if (!lead && !failed && kind === "order_request" && id) return <SectionLoader rows={6} />;
+  if (!lead || (kind !== "enquiry" && kind !== "order_request")) return <Navigate to={listPath} replace />;
+  return <ConfirmOrderForm kind={kind} lead={lead} listPath={listPath} />;
+};
+
+const ConfirmOrderForm = ({ kind, lead, listPath }) => {
+  const navigate = useNavigate();
+  const onClose = () => navigate(listPath);
   const [step, setStep] = useState(0);
   const [items, setItems] = useState([emptyItem()]);
   const [taxPercent, setTaxPercent] = useState("0");
@@ -38,9 +66,8 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
   const debouncedQ = useDebounced(q, 300);
   const [results, setResults] = useState([]);
 
-  // Fresh form each time the modal opens; a Buy Now request already names the product.
+  // Fresh form on mount; a Buy Now request already names the product.
   useEffect(() => {
-    if (!open) return;
     setStep(0);
     setOrder(null);
     setPaymentType("full");
@@ -58,10 +85,10 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
     setItems([first]);
     // Keyed on the lead's id: the parent swaps in an updated lead after confirming, which must not reset the wizard.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, kind, lead?._id]);
+  }, [kind, lead?._id]);
 
   useEffect(() => {
-    if (!open || !debouncedQ.trim()) {
+    if (!debouncedQ.trim()) {
       setResults([]);
       return;
     }
@@ -73,7 +100,7 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
     return () => {
       live = false;
     };
-  }, [debouncedQ, open]);
+  }, [debouncedQ]);
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.price) || 0), 0);
@@ -139,7 +166,6 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
       toast.success(data.message);
       setOrder(data.order);
       setStep(2);
-      onConfirmed?.(data.order, data.status);
     } catch (e) {
       toast.error(e.response?.data?.message || "Could not confirm the order.");
     } finally {
@@ -165,14 +191,16 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
     );
 
   return (
-    <Modal
-      open={open}
-      onClose={busy ? () => {} : onClose}
-      size="lg"
-      title={step === 2 ? "Order confirmed" : "Confirm order"}
-      subtitle={`${lead?.name} · ${lead?.phone}`}
-      footer={footer}
-    >
+    <div className="max-w-3xl mx-auto space-y-5">
+      <div>
+        <button type="button" onClick={onClose} disabled={busy} className="inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-800 mb-2">
+          <FiArrowLeft size={14} /> Back to {kind === "enquiry" ? "enquiries" : "orders"}
+        </button>
+        <h1 className="page-title">{step === 2 ? "Order confirmed" : "Confirm order"}</h1>
+        <p className="page-subtitle">{`${lead?.name} · ${lead?.phone}`}</p>
+      </div>
+
+      <div className="card">
       <div className="px-5 pt-4 flex items-center gap-2 text-[12px]">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
@@ -302,8 +330,10 @@ const ConfirmOrderModal = ({ open, onClose, kind, lead, onConfirmed }) => {
 
         {step === 2 && order && <Invoice order={order} />}
       </div>
-    </Modal>
+        <div className="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2">{footer}</div>
+      </div>
+    </div>
   );
 };
 
-export default ConfirmOrderModal;
+export default ConfirmOrder;

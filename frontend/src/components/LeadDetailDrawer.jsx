@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { FiCheckCircle, FiFileText, FiMail, FiMapPin, FiPhone, FiSend } from "react-icons/fi";
+import { FiArrowLeft, FiCheckCircle, FiFileText, FiMail, FiMapPin, FiPhone, FiSend } from "react-icons/fi";
 import { serverUrl } from "../App.jsx";
 import { can } from "../redux/userSlice.js";
-import ConfirmOrderModal from "./ConfirmOrderModal.jsx";
 import Invoice from "./Invoice.jsx";
 import { Drawer, Modal, SectionLoader, Spinner, StatusBadge, formatDate } from "./ui.jsx";
 
@@ -28,9 +28,27 @@ const NOTE_LABEL = { call: "Call", follow_up: "Follow-up", note: "Note", system:
  * Staff read the message in large type, log call / follow-up notes, and —
  * once the customer agrees to buy — confirm the order and take payment.
  *
+ * With `page`, renders inline as a full page instead of a slide-over drawer.
+ *
  * kind: "enquiry" | "order_request"
  */
-const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
+/** Same content as the drawer, but as a full page body with a back link. */
+const PageShell = ({ onClose, title, subtitle, children }) => (
+  <div className="space-y-4">
+    <button type="button" onClick={onClose} className="btn-secondary">
+      <FiArrowLeft size={14} /> Back
+    </button>
+    <div className="card overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-100">
+        <h1 className="page-title">{title}</h1>
+        <p className="page-subtitle">{subtitle}</p>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange, page = false }) => {
   const { userData } = useSelector((state) => state.user);
   const [notes, setNotes] = useState([]);
   const [order, setOrder] = useState(null);
@@ -42,7 +60,8 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
   const [saving, setSaving] = useState(false);
 
   const [statusBusy, setStatusBusy] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [bill, setBill] = useState(null);
   const [billLoading, setBillLoading] = useState(false);
 
@@ -72,6 +91,7 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
   }, [lead?._id, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!lead) return null;
+  const Shell = page ? PageShell : Drawer;
 
   const addNote = async (e) => {
     e.preventDefault();
@@ -120,18 +140,17 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
     }
   };
 
-  const onConfirmed = (created, status) => {
-    setOrder({ _id: created._id, invoiceNumber: created.invoiceNumber, paymentStatus: created.paymentStatus });
-    if (status) onChange?.({ ...lead, status });
-    load();
+  // Confirming happens on its own page inside the same portal shell (/admin, /sales or /talecaller).
+  const goConfirm = () => {
+    const base = "/" + pathname.split("/")[1];
+    navigate(kind === "enquiry" ? `${base}/confirm-order/enquiry` : `${base}/orders/${lead._id}/confirm`, { state: { lead } });
   };
 
   return (
     <>
-      <Drawer
-        open
+      <Shell
+        {...(page ? {} : { open: true, width: "max-w-3xl" })}
         onClose={onClose}
-        width="max-w-3xl"
         title={kind === "enquiry" ? lead.subject : `Buy Now: ${lead.productName}`}
         subtitle={`Received ${formatDate(lead.createdAt, true)}`}
       >
@@ -197,7 +216,7 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
             canOrder && (
               <div className="rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-[13px] text-slate-600">Customer agreed to buy? Confirm the order and record payment.</p>
-                <button type="button" className="btn-primary" onClick={() => setConfirmOpen(true)}>
+                <button type="button" className="btn-primary" onClick={goConfirm}>
                   <FiCheckCircle size={14} /> Confirm order
                 </button>
               </div>
@@ -259,15 +278,7 @@ const LeadDetailDrawer = ({ kind, lead, statusOptions, onClose, onChange }) => {
             )}
           </div>
         </div>
-      </Drawer>
-
-      <ConfirmOrderModal
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        kind={kind}
-        lead={lead}
-        onConfirmed={onConfirmed}
-      />
+      </Shell>
 
       <Modal open={!!bill} onClose={() => setBill(null)} title="Bill" subtitle={bill?.invoiceNumber} size="lg">
         <div className="p-5">{bill && <Invoice order={bill} />}</div>

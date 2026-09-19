@@ -44,11 +44,16 @@ export default {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        popIn: {
+          "0%": { opacity: "0", transform: "scale(0.96) translateY(8px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
       },
       animation: {
         fadeSlideDown: "fadeSlideDown 0.15s ease-out",
         fadeIn: "fadeIn 0.15s ease-out",
         slideInRight: "slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+        popIn: "popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },

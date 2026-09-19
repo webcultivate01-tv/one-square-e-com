@@ -138,6 +138,21 @@ export const getAllOrderRequests = async (req, res) => {
   }
 };
 
+// GET /api/order-request/:id   (admin)
+export const getOrderRequestById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidId(id)) return res.status(400).json({ message: "Invalid request ID." });
+
+    const request = await OrderRequest.findByPk(id, { include: [PRODUCT_INCLUDE] });
+    if (!request) return res.status(404).json({ message: "Request not found." });
+
+    return res.status(200).json({ request: toOrderRequestDTO(request) });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // PUT /api/order-request/status/:id   (admin)
 export const updateOrderRequestStatus = async (req, res) => {
   try {

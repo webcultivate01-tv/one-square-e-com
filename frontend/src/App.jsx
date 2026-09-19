@@ -13,6 +13,8 @@ import Products from "./pages/Admin/Products.jsx";
 import Categories from "./pages/Admin/Categories.jsx";
 import Orders from "./pages/Admin/Orders.jsx";
 import Enquiries from "./pages/Admin/Enquiries.jsx";
+import OrderDetail from "./pages/OrderDetail.jsx";
+import ConfirmOrder from "./pages/ConfirmOrder.jsx";
 import Employees from "./pages/Admin/Employees.jsx";
 import Profile from "./pages/Admin/Profile.jsx";
 import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
@@ -57,7 +59,36 @@ const portalModuleRoutes = (base) =>
     />
   ));
 
-const TELECALLER_NAV = portalNav("/talecaller");
+/** Confirm-order page (bill + payment) — one route per lead kind so each keeps its own permission. */
+const confirmOrderRoutes = (homePath) =>
+  [
+    { kind: "enquiry", permission: "enquiries" },
+    { kind: "order_request", permission: "orders" },
+  ].map(({ kind, permission }) => (
+    <Route
+      key={kind}
+      path={kind === "order_request" ? "orders/:id/confirm" : `confirm-order/${kind}`}
+      element={
+        <PermissionRoute permission={permission} homePath={homePath}>
+          <ConfirmOrder />
+        </PermissionRoute>
+      }
+    />
+  ));
+
+/** Order detail page — opened by clicking a row on the Orders list. */
+const orderDetailRoute = (homePath) => (
+  <Route
+    path="orders/:id"
+    element={
+      <PermissionRoute permission="orders" homePath={homePath}>
+        <OrderDetail />
+      </PermissionRoute>
+    }
+  />
+);
+
+const TELECALLER_NAV =portalNav("/talecaller");
 const SALES_NAV = portalNav("/sales");
 
 /** The deployed backend URL — imported wherever an API call is made. */
@@ -140,6 +171,8 @@ const App = () => {
             </PermissionRoute>
           }
         />
+        {orderDetailRoute()}
+        {confirmOrderRoutes()}
         <Route path="payments" element={<ComingSoon title="Payments" />} />
         <Route path="customers" element={<ComingSoon title="Customers" />} />
         <Route
@@ -188,6 +221,8 @@ const App = () => {
       >
         <Route index element={<TelecallerDashboard />} />
         {portalModuleRoutes("/talecaller")}
+        {orderDetailRoute("/talecaller")}
+        {confirmOrderRoutes("/talecaller")}
         <Route path="profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/talecaller" replace />} />
       </Route>
@@ -208,6 +243,8 @@ const App = () => {
       >
         <Route index element={<SalesDashboard />} />
         {portalModuleRoutes("/sales")}
+        {orderDetailRoute("/sales")}
+        {confirmOrderRoutes("/sales")}
         <Route path="profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/sales" replace />} />
       </Route>
